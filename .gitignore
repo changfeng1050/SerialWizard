@@ -21,3 +21,6 @@ app/src/main/assets/version.json
 *.Release
 *.Debug
 *.exe
+cmake-build-debug/
+debug/
+release/

@@ -188,12 +188,10 @@ void MainWindow::initUi() {
     sendIntervalLayout->addWidget(sendIntervalLineEdit);
 
     saveSentDataButton = new QPushButton(tr("保存数据"), this);
-    clearSentDataButton = new QPushButton(tr("清除数据"), this);
+    clearSentDataButton = new QPushButton(tr("清除显示"), this);
     auto sendSettingsHLayout1 = new QHBoxLayout;
     sendSettingsHLayout1->addWidget(saveSentDataButton);
-    sendSettingsHLayout1->addWidget(clearSentDataButton);
-
-    frameInfoSettingButton = new QPushButton(tr("数据帧设置"), this);
+    sendSettingsHLayout1->addWidget(clearSentDataButton);;
 
     auto sendSettingLayout = new QVBoxLayout;
     sendSettingLayout->addWidget(sendHexCheckBox);
@@ -202,13 +200,22 @@ void MainWindow::initUi() {
     sendSettingLayout->addWidget(autoSendCheckBox);
     sendSettingLayout->addLayout(sendIntervalLayout);
     sendSettingLayout->addLayout(sendSettingsHLayout1);
-    sendSettingLayout->addWidget(frameInfoSettingButton);
 
     auto sendSettingGroupBox = new QGroupBox(tr("发送设置"));
     sendSettingGroupBox->setLayout(sendSettingLayout);
 
-    sendDataBrowser = new QTextBrowser(this);
+    frameInfoSettingCheckBox = new QCheckBox(tr("按照数据帧格式"), this);
+    sendFrameButton = new QPushButton(tr("发送下一帧"), this);
 
+    auto frameLayout = new QVBoxLayout;
+    frameLayout->addWidget(frameInfoSettingCheckBox);
+    frameLayout->addWidget(sendFrameButton);
+
+
+    auto frameGroupBox = new QGroupBox(tr("数据帧"));
+    frameGroupBox->setLayout(frameLayout);
+
+    sendDataBrowser = new QTextBrowser(this);
 
     auto sendDataLayout = new QVBoxLayout;
     sendDataLayout->addWidget(sendDataBrowser);
@@ -217,6 +224,7 @@ void MainWindow::initUi() {
 
     sendTextEdit = new QTextEdit(this);
     transferButton = new QPushButton(tr("转换"), this);
+
     sendButton = new QPushButton(tr("发送"));
 
     auto sendButtonLayout = new QVBoxLayout;
@@ -232,9 +240,9 @@ void MainWindow::initUi() {
 
     auto mainVBoxLayout1 = new QVBoxLayout;
     mainVBoxLayout1->addWidget(serialPortGroupBox);
-
     mainVBoxLayout1->addWidget(receiveSettingGroupBox);
     mainVBoxLayout1->addWidget(sendSettingGroupBox);
+    mainVBoxLayout1->addWidget(frameGroupBox);
     mainVBoxLayout1->addStretch();
 
     auto mainVBoxLayout2 = new QVBoxLayout;
@@ -336,20 +344,32 @@ void MainWindow::initConnect() {
     connect(clearSentDataButton, &QPushButton::clicked, this, &MainWindow::clearSentData);
 
 
+    connect(autoSendCheckBox, &QCheckBox::clicked, [this] {
+        autoSendTimer->stop();
+    });
+
     connect(serialPort, &SerialPort::dataReceived, this, &MainWindow::receivedData);
     connect(serialPort, &SerialPort::dataSent, this, &MainWindow::sentData);
 
-    connect(frameInfoSettingButton, &QPushButton::clicked, this, &MainWindow::openFrameInfoSettingDialog);
+    connect(frameInfoSettingCheckBox, &QCheckBox::clicked, [this] {
+        if (frameInfoSettingCheckBox->isChecked()) {
+            openFrameInfoSettingDialog();
+        } else {
+            frameInfo = nullptr;
+        }
+    });
+
+    connect(sendFrameButton, &QPushButton::clicked, [this](bool value) {
+        upDateSendData(sendHexCheckBox->isChecked(), sendTextEdit->toPlainText());
+        sendOneFrameData();
+    });
 
     connect(sendButton, &QPushButton::clicked, [this](bool value) {
-
         upDateSendData(sendHexCheckBox->isChecked(), sendTextEdit->toPlainText());
-
+        sendAllData();
         if (autoSendCheckBox->isChecked()) {
             autoSendTimer->stop();
-            autoSendTimer->start();
-        } else {
-            sendData();
+            autoSendTimer->start(sendIntervalLineEdit->text().toInt());
         }
     });
 
@@ -368,17 +388,7 @@ void MainWindow::initConnect() {
     });
 
     connect(autoSendTimer, &QTimer::timeout, [this] {
-        if (serialPort->isOpen() && mySendData != nullptr) {
-            int len = 512;
-            auto data = mySendData->mid(lastIndex, len);
-            if (data.count() == 0) {
-                lastIndex = 0;
-                autoSendTimer->stop();
-                return;
-            }
-            lastIndex += data.count();
-            serialPort->write(data);
-        }
+        sendAllData();
     });
 }
 
@@ -413,14 +423,14 @@ void MainWindow::createMenu() {
     fileMenu->addAction(openAct);
     fileMenu->addAction(saveAct);
 
-    toolManu = menuBar()->addMenu(tr("工具(&T)"));
-    toolManu->addAction(validateDataAct);
+    toolMenu = menuBar()->addMenu(tr("工具(&T)"));
+    toolMenu->addAction(validateDataAct);
 
 
 }
 
 void MainWindow::open() {
-    QString fileName = QFileDialog::getOpenFileName(this, tr("打开数据文件"), "/", tr("Text (*.txt"));
+    QString fileName = QFileDialog::getOpenFileName(this, tr("打开数据文件"), "/", "");
     if (fileName.isEmpty()) {
         return;
     }
@@ -509,7 +519,7 @@ QByteArray MainWindow::getNextFrameData() {
         return QByteArray();
     }
 
-    if (frameInfo == nullptr) {
+    if (!frameInfoSettingCheckBox->isChecked() || frameInfo == nullptr) {
         int len = 128;
         auto data = mySendData->mid(lastIndex, len);
         if (data.count() == 0) {
@@ -528,7 +538,17 @@ QByteArray MainWindow::getNextFrameData() {
     }
 }
 
-void MainWindow::sendData() {
+
+void MainWindow::sendAllData() {
+    auto &data = *mySendData;
+    if (data.isEmpty() || !serialPort->isOpen()) {
+        return;
+    }
+
+    serialPort->write(data);
+}
+
+void MainWindow::sendOneFrameData() {
     auto data = getNextFrameData();
     if (data.isEmpty()) {
         return;
@@ -598,13 +618,18 @@ void MainWindow::readSettings() {
     auto autoSend = settings.value("auto_send", false).toBool();
     auto autoSendInterval = settings.value("auto_send_interval", 100).toInt();
 
+    settings.beginGroup("FrameSettings");
+    auto enableFrameInfo = settings.value("enable_frame_info", false).toBool();
+
     sendHexCheckBox->setChecked(sendAsHex);
     displaySendDataCheckBox->setChecked(displaySendData);
     displayReceiveDataAsHexCheckBox->setChecked(displaySendDataAsHex);
     autoSendCheckBox->setChecked(autoSend);
     sendIntervalLineEdit->setText(QString::number(autoSendInterval));
 
+    frameInfoSettingCheckBox->setChecked(enableFrameInfo);
 
+    frameInfo = new FrameInfo(readFrameInfo());
 }
 
 void MainWindow::writeSettings() {
@@ -632,6 +657,9 @@ void MainWindow::writeSettings() {
     settings.setValue("display_send_data", displaySendDataCheckBox->isChecked());
     settings.setValue("auto_send", autoSendCheckBox->isChecked());
     settings.setValue("auto_send_interval", sendIntervalLineEdit->text().toInt());
+
+    settings.beginGroup("FrameSettings");
+    settings.setValue("enable_frame_info", frameInfoSettingCheckBox->isChecked());
 
     settings.sync();
 
@@ -762,6 +790,7 @@ void MainWindow::sentData(const QByteArray &data) {
     sendCount += data.count();
     updateSendCount(sendCount);
 }
+
 
 
 

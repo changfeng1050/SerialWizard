@@ -58,7 +58,9 @@ public slots:
 
     void closeSerialPort();
 
-    void sendData();
+    void sendOneFrameData();
+
+    void sendAllData();
 
 private slots:
 
@@ -125,7 +127,7 @@ private:
 
     QMenu *fileMenu;
     QMenu *editMenu;
-    QMenu *toolManu;
+    QMenu *toolMenu;
     QMenu *helpMenu;
 
     QAction *openAct;
@@ -161,7 +163,7 @@ private:
     QCheckBox *displaySendDataAsHexCheckBox;
     QCheckBox *autoSendCheckBox;
     QLineEdit *sendIntervalLineEdit;
-    QPushButton *frameInfoSettingButton;
+    QCheckBox *frameInfoSettingCheckBox;
     QPushButton *saveSentDataButton;
     QPushButton *clearSentDataButton;
 
@@ -174,6 +176,7 @@ private:
 
     QTextEdit *sendTextEdit;
 
+    QPushButton *sendFrameButton;
     QPushButton *sendButton;
     QPushButton *transferButton;
 
