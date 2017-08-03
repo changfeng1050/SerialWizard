@@ -17,6 +17,8 @@ class QCheckBox;
 
 class QLineEdit;
 
+class QLabel;
+
 class QTextEdit;
 
 class QTimer;
@@ -40,6 +42,7 @@ public:
     void initConnect();
 
     void createStatusBar();
+
     ~MainWindow() override;
 
 
@@ -59,6 +62,10 @@ public slots:
 
 private slots:
 
+    void receivedData(const QByteArray &data);
+
+    void sentData(const QByteArray &data);
+
     void setOpenSerialButtonText(bool isOpen);
 
     void displayReceiveData(const QByteArray &data);
@@ -74,6 +81,7 @@ private slots:
     void openDataValidator();
 
     void openFrameInfoSettingDialog();
+
 
     void clearReceivedData();
 
@@ -103,6 +111,17 @@ private:
 
     QByteArray getNextFrameData(QByteArray *data, int startIndex, FrameInfo *frameInfo);
 
+    void sendStatusMessage(const QString &msg);
+
+    void updateSendCount(qint64 count);
+
+    void updateReceiveCount(qint64 count);
+
+    //状态栏
+    QLabel *statusBarReceiveByteCountLabel;
+    QLabel *statusBarSendByteCountLabel;
+    QPushButton *statusBarResetCountButton;
+
 
     QMenu *fileMenu;
     QMenu *editMenu;
@@ -116,6 +135,9 @@ private:
 
     SerialPort *serialPort;
     SerialSettings *serialSettings;
+
+    qint64 sendCount;
+    qint64 receiveCount;
 
     // 串口设置
     QComboBox *serialPortNameComboBox;
@@ -153,6 +175,7 @@ private:
     QTextEdit *sendTextEdit;
 
     QPushButton *sendButton;
+    QPushButton *transferButton;
 
     QTimer *autoSendTimer;
     QByteArray *mySendData;

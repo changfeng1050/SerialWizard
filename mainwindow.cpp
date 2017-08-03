@@ -18,6 +18,7 @@
 #include <QTimer>
 #include <QtCore/QSettings>
 #include <QtCore/QProcess>
+#include <QStatusBar>
 
 #include "MainWindow.h"
 #include "CalculateCheckSumDialog.h"
@@ -29,7 +30,7 @@ int lastIndex = 0;
 static QByteArray dataToHex(const QByteArray &data) {
     QByteArray result = data.toHex().toUpper();
 
-    for (int i = 0; i < result.size(); i += 3)
+    for (int i = 2; i < result.size(); i += 3)
         result.insert(i, ' ');
 
     return result;
@@ -41,7 +42,7 @@ static QByteArray dataFromHex(const QString &hex) {
     return QByteArray::fromHex(line);
 }
 
-MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
+MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), receiveCount(0), sendCount(0) {
 
     init();
     initUi();
@@ -50,6 +51,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     readSettings();
     createActions();
     createMenu();
+    createStatusBar();
 }
 
 MainWindow::~MainWindow() {
@@ -73,7 +75,7 @@ void MainWindow::init() {
 
 void MainWindow::initUi() {
 
-    setMinimumSize(900, 600);
+    setMinimumSize(1024, 800);
     auto serialPortNameLabel = new QLabel(tr("串口"), this);
     QStringList serialPortNameList;
     for (int i = 0; i < 20; ++i) {
@@ -207,17 +209,23 @@ void MainWindow::initUi() {
 
     sendDataBrowser = new QTextBrowser(this);
 
+
     auto sendDataLayout = new QVBoxLayout;
     sendDataLayout->addWidget(sendDataBrowser);
     auto sendDataGroupBox = new QGroupBox(tr("数据发送显示"));
     sendDataGroupBox->setLayout(sendDataLayout);
 
     sendTextEdit = new QTextEdit(this);
+    transferButton = new QPushButton(tr("转换"), this);
     sendButton = new QPushButton(tr("发送"));
+
+    auto sendButtonLayout = new QVBoxLayout;
+    sendButtonLayout->addWidget(transferButton);
+    sendButtonLayout->addWidget(sendButton);
 
     auto sendLayout = new QHBoxLayout;
     sendLayout->addWidget(sendTextEdit);
-    sendLayout->addWidget(sendButton);
+    sendLayout->addLayout(sendButtonLayout);
 
     auto sendGroupBox = new QGroupBox;
     sendGroupBox->setLayout(sendLayout);
@@ -247,6 +255,30 @@ void MainWindow::initUi() {
 
 void MainWindow::createStatusBar() {
 
+    auto receiveByteCountLabel = new QLabel(tr("接收:"), this);
+    statusBarReceiveByteCountLabel = new QLabel(this);
+    statusBarReceiveByteCountLabel->setMinimumWidth(100);
+
+    auto sendByteCountLabel = new QLabel(tr("发送:"), this);
+
+    statusBarSendByteCountLabel = new QLabel(this);
+    statusBarSendByteCountLabel->setMinimumWidth(100);
+
+    statusBarResetCountButton = new QPushButton(tr("重置"), this);
+
+    statusBar()->addPermanentWidget(receiveByteCountLabel);
+    statusBar()->addPermanentWidget(statusBarReceiveByteCountLabel);
+    statusBar()->addPermanentWidget(sendByteCountLabel);
+    statusBar()->addPermanentWidget(statusBarSendByteCountLabel);
+    statusBar()->addPermanentWidget(statusBarResetCountButton);
+
+
+    connect(statusBarResetCountButton, &QPushButton::clicked, [this] {
+        receiveCount = 0;
+        sendCount = 0;
+        updateReceiveCount(receiveCount);
+        updateSendCount(sendCount);
+    });
 }
 
 
@@ -304,8 +336,8 @@ void MainWindow::initConnect() {
     connect(clearSentDataButton, &QPushButton::clicked, this, &MainWindow::clearSentData);
 
 
-    connect(serialPort, &SerialPort::dataReceived, this, &MainWindow::displayReceiveData);
-    connect(serialPort, &SerialPort::dataSent, this, &MainWindow::displaySentData);
+    connect(serialPort, &SerialPort::dataReceived, this, &MainWindow::receivedData);
+    connect(serialPort, &SerialPort::dataSent, this, &MainWindow::sentData);
 
     connect(frameInfoSettingButton, &QPushButton::clicked, this, &MainWindow::openFrameInfoSettingDialog);
 
@@ -319,6 +351,20 @@ void MainWindow::initConnect() {
         } else {
             sendData();
         }
+    });
+
+    connect(transferButton, &QPushButton::clicked, [this] {
+        auto text = sendTextEdit->toPlainText();
+        text.replace(" ", "");
+        QString result;
+        QRegExp rx("^[0-9A-Fa-f]+$");
+        if (rx.exactMatch(text)) {
+            result = QString::fromLocal8Bit(dataFromHex(text));
+        } else {
+            result = dataToHex(text.toLocal8Bit());
+        }
+
+        sendTextEdit->setText(result);
     });
 
     connect(autoSendTimer, &QTimer::timeout, [this] {
@@ -374,7 +420,16 @@ void MainWindow::createMenu() {
 }
 
 void MainWindow::open() {
+    QString fileName = QFileDialog::getOpenFileName(this, tr("打开数据文件"), "/", tr("Text (*.txt"));
+    if (fileName.isEmpty()) {
+        return;
+    }
 
+    QFile file(fileName);
+    if (file.open(QIODevice::ReadOnly)) {
+        auto data = file.readAll();
+        sendTextEdit->setText(QString::fromLocal8Bit(data));
+    }
 }
 
 void MainWindow::save() {
@@ -682,6 +737,30 @@ void MainWindow::saveSentData() {
 
     }
 
+}
+
+void MainWindow::sendStatusMessage(const QString &msg) {
+    statusBar()->showMessage(msg);
+}
+
+void MainWindow::updateSendCount(qint64 count) {
+    statusBarSendByteCountLabel->setText(QString::number(count));
+}
+
+void MainWindow::updateReceiveCount(qint64 count) {
+    statusBarReceiveByteCountLabel->setText(QString::number(count));
+}
+
+void MainWindow::receivedData(const QByteArray &data) {
+    displayReceiveData(data);
+    receiveCount += data.count();
+    updateReceiveCount(receiveCount);
+}
+
+void MainWindow::sentData(const QByteArray &data) {
+    displaySentData(data);
+    sendCount += data.count();
+    updateSendCount(sendCount);
 }
 
 
