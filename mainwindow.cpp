@@ -223,12 +223,14 @@ void MainWindow::initUi() {
     sendDataGroupBox->setLayout(sendDataLayout);
 
     sendTextEdit = new QTextEdit(this);
-    transferButton = new QPushButton(tr("转换"), this);
+    transferHexButton = new QPushButton(tr("转换为十六进制"), this);
+    transferAsciiButton = new QPushButton(tr("转换为文本"), this);
 
     sendButton = new QPushButton(tr("发送"));
 
     auto sendButtonLayout = new QVBoxLayout;
-    sendButtonLayout->addWidget(transferButton);
+    sendButtonLayout->addWidget(transferHexButton);
+    sendButtonLayout->addWidget(transferAsciiButton);
     sendButtonLayout->addWidget(sendButton);
 
     auto sendLayout = new QHBoxLayout;
@@ -373,17 +375,14 @@ void MainWindow::initConnect() {
         }
     });
 
-    connect(transferButton, &QPushButton::clicked, [this] {
+    connect(transferHexButton, &QPushButton::clicked, [this] {
         auto text = sendTextEdit->toPlainText();
-        text.replace(" ", "");
-        QString result;
-        QRegExp rx("^[0-9A-Fa-f]+$");
-        if (rx.exactMatch(text)) {
-            result = QString::fromLocal8Bit(dataFromHex(text));
-        } else {
-            result = dataToHex(text.toLocal8Bit());
-        }
-
+        auto result = QString(dataToHex(text.toLocal8Bit()));
+        sendTextEdit->setText(result);
+    });
+    connect(transferAsciiButton, &QPushButton::clicked, [this] {
+        auto text = sendTextEdit->toPlainText();
+        QString result = QString::fromLocal8Bit(dataFromHex(text));
         sendTextEdit->setText(result);
     });
 
@@ -438,12 +437,13 @@ void MainWindow::open() {
     QFile file(fileName);
     if (file.open(QIODevice::ReadOnly)) {
         auto data = file.readAll();
+
         sendTextEdit->setText(QString::fromLocal8Bit(data));
     }
 }
 
 void MainWindow::save() {
-
+    saveReceivedData();
 }
 
 void MainWindow::tool() {
@@ -709,8 +709,7 @@ void MainWindow::clearReceivedData() {
 
 void MainWindow::saveReceivedData() {
     QString fileName = QFileDialog::getSaveFileName(this, tr("保存接收数据"),
-                                                    "/",
-                                                    tr("Text (*.txt)"));
+                                                    "/", tr("Text (*.txt)"));
     if (fileName.isEmpty()) {
         return;
     }
@@ -757,7 +756,6 @@ void MainWindow::saveSentData() {
         in << sendDataBrowser->toPlainText().toLocal8Bit();
 
         file.close();
-
 
         if (okToContinue(tr("消息"), tr("发送数据保存成功,是否打开所在文件夹？"))) {
             QProcess::startDetached("explorer.exe /select," + QDir::toNativeSeparators(fileName));

@@ -1,18 +1,4 @@
-*.iml
-.gradle
-/local.properties
 .idea/
-/.idea/workspace.xml
-/.idea/libraries
-.DS_Store
-/build
-/captures
-/obj
-*.apk
-*/obj
-/.idea/misc.xml
-*.version.json
-app/src/main/assets/version.json
 *build*
 *release*
 *debug*
@@ -21,6 +7,3 @@ app/src/main/assets/version.json
 *.Release
 *.Debug
 *.exe
-cmake-build-debug/
-debug/
-release/

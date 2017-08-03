@@ -178,7 +178,8 @@ private:
 
     QPushButton *sendFrameButton;
     QPushButton *sendButton;
-    QPushButton *transferButton;
+    QPushButton *transferHexButton;
+    QPushButton *transferAsciiButton;
 
     QTimer *autoSendTimer;
     QByteArray *mySendData;
