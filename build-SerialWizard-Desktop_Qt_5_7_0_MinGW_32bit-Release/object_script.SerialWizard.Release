@@ -1,0 +1,12 @@
+INPUT(
+./release\main.o
+./release\mainwindow.o
+./release\serialport.o
+./release\global.o
+./release\FrameInfoDialog.o
+./release\CalculateCheckSumDialog.o
+./release\moc_mainwindow.o
+./release\moc_serialport.o
+./release\moc_FrameInfoDialog.o
+./release\moc_CalculateCheckSumDialog.o
+);

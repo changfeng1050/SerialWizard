@@ -1,0 +1,12 @@
+INPUT(
+./debug\CalculateCheckSumDialog.o
+./debug\FrameInfoDialog.o
+./debug\global.o
+./debug\main.o
+./debug\MainWindow.o
+./debug\serialport.o
+./debug\moc_CalculateCheckSumDialog.o
+./debug\moc_FrameInfoDialog.o
+./debug\moc_MainWindow.o
+./debug\moc_serialport.o
+);
