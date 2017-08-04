@@ -25,7 +25,7 @@
 #include "global.h"
 
 int lastIndex = 0;
-
+int lastLineIndex = 0;
 
 static QByteArray dataToHex(const QByteArray &data) {
     QByteArray result = data.toHex().toUpper();
@@ -69,6 +69,7 @@ void MainWindow::init() {
     serialPort = new SerialPort(this);
     autoSendTimer = new QTimer();
     mySendData = nullptr;
+    mySendList = nullptr;
     frameInfo = nullptr;
 
 }
@@ -226,11 +227,13 @@ void MainWindow::initUi() {
     transferHexButton = new QPushButton(tr("转换为十六进制"), this);
     transferAsciiButton = new QPushButton(tr("转换为文本"), this);
 
+    sendLineButton = new QPushButton(tr("发送下一行"));
     sendButton = new QPushButton(tr("发送"));
 
     auto sendButtonLayout = new QVBoxLayout;
     sendButtonLayout->addWidget(transferHexButton);
     sendButtonLayout->addWidget(transferAsciiButton);
+    sendButtonLayout->addWidget(sendLineButton);
     sendButtonLayout->addWidget(sendButton);
 
     auto sendLayout = new QHBoxLayout;
@@ -364,6 +367,11 @@ void MainWindow::initConnect() {
     connect(sendFrameButton, &QPushButton::clicked, [this](bool value) {
         upDateSendData(sendHexCheckBox->isChecked(), sendTextEdit->toPlainText());
         sendOneFrameData();
+    });
+
+    connect(sendLineButton, &QPushButton::clicked, [this] {
+        upDateSendData(sendHexCheckBox->isHidden(), sendTextEdit->toPlainText());
+        sendOneLineData();
     });
 
     connect(sendButton, &QPushButton::clicked, [this](bool value) {
@@ -538,6 +546,23 @@ QByteArray MainWindow::getNextFrameData() {
     }
 }
 
+QByteArray MainWindow::getNextLineData() {
+    if (mySendList == nullptr) {
+        return QByteArray();
+    }
+    if (lastLineIndex + 1 > mySendList->count()) {
+        lastLineIndex = 0;
+    }
+    auto line = (*mySendList)[lastLineIndex];
+    lastLineIndex++;
+
+    if (sendHexCheckBox->isChecked()) {
+        return dataFromHex(line);
+    } else {
+        return  line.toLocal8Bit();
+    }
+}
+
 
 void MainWindow::sendAllData() {
     auto &data = *mySendData;
@@ -559,16 +584,36 @@ void MainWindow::sendOneFrameData() {
     }
 }
 
+void MainWindow::sendOneLineData() {
+    auto data = getNextLineData();
+    if (data.isEmpty()) {
+        return;
+    }
+    if (serialPort->isOpen()) {
+        serialPort->write(data);
+    }
+}
+
 void MainWindow::upDateSendData(bool isHex, const QString &text) {
     if (mySendData == nullptr) {
         mySendData = new QByteArray;
     }
-
+    mySendData->clear();
     if (isHex) {
         mySendData->append(dataFromHex(text));
     } else {
-        mySendData->clear();
         mySendData->append(text.toLocal8Bit());
+    }
+
+    if (mySendList == nullptr) {
+        mySendList = new QStringList;
+    }
+    mySendList->clear();
+    QString text_temp(text);
+    QTextStream in(&text_temp);
+
+    while (!in.atEnd()) {
+        *mySendList << in.readLine();
     }
 }
 
@@ -623,7 +668,7 @@ void MainWindow::readSettings() {
 
     sendHexCheckBox->setChecked(sendAsHex);
     displaySendDataCheckBox->setChecked(displaySendData);
-    displayReceiveDataAsHexCheckBox->setChecked(displaySendDataAsHex);
+    displaySendDataAsHexCheckBox->setChecked(displaySendDataAsHex);
     autoSendCheckBox->setChecked(autoSend);
     sendIntervalLineEdit->setText(QString::number(autoSendInterval));
 
@@ -649,12 +694,13 @@ void MainWindow::writeSettings() {
 
     settings.beginGroup("SerialReceiveSettings");
     settings.setValue("add_line_return", addLineReturnCheckBox->isChecked());
-    settings.setValue("display_receive_data_as_hex", displayReceiveDataAsHexCheckBox->isChecked());
+    settings.setValue("display_receive_data_as_hex", displaySendDataAsHexCheckBox->isChecked());
     settings.setValue("add_timestamp", addReceiveTimestampCheckBox->isChecked());
 
     settings.beginGroup("SerialSendSettings");
     settings.setValue("send_as_hex", sendHexCheckBox->isChecked());
     settings.setValue("display_send_data", displaySendDataCheckBox->isChecked());
+    settings.setValue("display_send_data_as_hex", displaySendDataAsHexCheckBox->isChecked());
     settings.setValue("auto_send", autoSendCheckBox->isChecked());
     settings.setValue("auto_send_interval", sendIntervalLineEdit->text().toInt());
 

@@ -60,6 +60,8 @@ public slots:
 
     void sendOneFrameData();
 
+    void sendOneLineData();
+
     void sendAllData();
 
 private slots:
@@ -110,6 +112,8 @@ private:
     void upDateSendData(bool isHex, const QString &text);
 
     QByteArray getNextFrameData();
+
+    QByteArray getNextLineData();
 
     QByteArray getNextFrameData(QByteArray *data, int startIndex, FrameInfo *frameInfo);
 
@@ -177,12 +181,14 @@ private:
     QTextEdit *sendTextEdit;
 
     QPushButton *sendFrameButton;
+    QPushButton *sendLineButton;
     QPushButton *sendButton;
     QPushButton *transferHexButton;
     QPushButton *transferAsciiButton;
 
     QTimer *autoSendTimer;
     QByteArray *mySendData;
+    QStringList *mySendList;
     QString sendText;
 
 };
