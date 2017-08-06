@@ -76,7 +76,7 @@ void MainWindow::init() {
 
 void MainWindow::initUi() {
 
-    setMinimumSize(1024, 800);
+    setMinimumSize(1024, 900);
     auto serialPortNameLabel = new QLabel(tr("串口"), this);
     QStringList serialPortNameList;
     for (int i = 0; i < 20; ++i) {
@@ -176,8 +176,9 @@ void MainWindow::initUi() {
     sendHexCheckBox = new QCheckBox(tr("按十六进制发送"), this);
     displaySendDataCheckBox = new QCheckBox(tr("显示发送数据"), this);
     displaySendDataAsHexCheckBox = new QCheckBox(tr("十六进制显示发送"), this);
-    autoSendCheckBox = new QCheckBox(tr("自动循环发送"), this);
 
+
+    autoSendCheckBox = new QCheckBox(tr("自动循环发送"), this);
     auto sendIntervalLabel = new QLabel(tr("自动发送间隔(毫秒)"), this);
     sendIntervalLineEdit = new QLineEdit(this);
     sendIntervalLineEdit->setMaximumWidth(50);
@@ -187,6 +188,12 @@ void MainWindow::initUi() {
     auto sendIntervalLayout = new QHBoxLayout;
     sendIntervalLayout->addWidget(sendIntervalLabel);
     sendIntervalLayout->addWidget(sendIntervalLineEdit);
+
+    auto autoSendLayout = new QVBoxLayout;
+    autoSendLayout->addWidget(autoSendCheckBox);
+    autoSendLayout->addLayout(sendIntervalLayout);
+    auto autoSendGroupBox = new QGroupBox("自动发送设置");
+    autoSendGroupBox->setLayout(autoSendLayout);
 
     saveSentDataButton = new QPushButton(tr("保存数据"), this);
     clearSentDataButton = new QPushButton(tr("清除显示"), this);
@@ -198,8 +205,6 @@ void MainWindow::initUi() {
     sendSettingLayout->addWidget(sendHexCheckBox);
     sendSettingLayout->addWidget(displaySendDataCheckBox);
     sendSettingLayout->addWidget(displaySendDataAsHexCheckBox);
-    sendSettingLayout->addWidget(autoSendCheckBox);
-    sendSettingLayout->addLayout(sendIntervalLayout);
     sendSettingLayout->addLayout(sendSettingsHLayout1);
 
     auto sendSettingGroupBox = new QGroupBox(tr("发送设置"));
@@ -213,8 +218,36 @@ void MainWindow::initUi() {
     frameLayout->addWidget(sendFrameButton);
 
 
-    auto frameGroupBox = new QGroupBox(tr("数据帧"));
+    auto frameGroupBox = new QGroupBox(tr("按数据帧发送"));
     frameGroupBox->setLayout(frameLayout);
+
+    auto lineGroupBox = new QGroupBox(tr("按行发送"));
+    sendLineButton = new QPushButton(tr("发送下一行"));
+    auto lineLayout = new QVBoxLayout;
+    lineLayout->addWidget(sendLineButton);
+    lineGroupBox->setLayout(lineLayout);
+
+    auto fixBytesGroupBox = new QGroupBox(tr("按固定字节发送"));
+
+    auto byteCountLabel = new QLabel(tr("每次发送字节数"), this);
+    byteCountLineEdit = new QLineEdit(this);
+    byteCountLineEdit->setMaximumWidth(50);
+    byteCountLineEdit->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Maximum);
+    byteCountLabel->setBuddy(byteCountLineEdit);
+
+    auto byteCountLayout = new QHBoxLayout;
+    byteCountLayout->addWidget(byteCountLabel);
+    byteCountLayout->addWidget(byteCountLineEdit);
+
+    sendFixBytesButton = new QPushButton(tr("发送下一帧"), this);
+
+    auto sendBytByteCountLayout = new QVBoxLayout;
+    sendBytByteCountLayout->addLayout(byteCountLayout);
+    sendBytByteCountLayout->addWidget(sendFixBytesButton);
+
+
+    fixBytesGroupBox->setLayout(sendBytByteCountLayout);
+
 
     sendDataBrowser = new QTextBrowser(this);
 
@@ -227,13 +260,11 @@ void MainWindow::initUi() {
     transferHexButton = new QPushButton(tr("转换为十六进制"), this);
     transferAsciiButton = new QPushButton(tr("转换为文本"), this);
 
-    sendLineButton = new QPushButton(tr("发送下一行"));
     sendButton = new QPushButton(tr("发送"));
 
     auto sendButtonLayout = new QVBoxLayout;
     sendButtonLayout->addWidget(transferHexButton);
     sendButtonLayout->addWidget(transferAsciiButton);
-    sendButtonLayout->addWidget(sendLineButton);
     sendButtonLayout->addWidget(sendButton);
 
     auto sendLayout = new QHBoxLayout;
@@ -247,7 +278,10 @@ void MainWindow::initUi() {
     mainVBoxLayout1->addWidget(serialPortGroupBox);
     mainVBoxLayout1->addWidget(receiveSettingGroupBox);
     mainVBoxLayout1->addWidget(sendSettingGroupBox);
+    mainVBoxLayout1->addWidget(autoSendGroupBox);
     mainVBoxLayout1->addWidget(frameGroupBox);
+    mainVBoxLayout1->addWidget(lineGroupBox);
+    mainVBoxLayout1->addWidget(fixBytesGroupBox);
     mainVBoxLayout1->addStretch();
 
     auto mainVBoxLayout2 = new QVBoxLayout;
@@ -365,22 +399,34 @@ void MainWindow::initConnect() {
     });
 
     connect(sendFrameButton, &QPushButton::clicked, [this](bool value) {
+        sendType = SendType::Frame;
         upDateSendData(sendHexCheckBox->isChecked(), sendTextEdit->toPlainText());
         sendOneFrameData();
+
+        startAutoSendTimerIfNeed();
     });
 
     connect(sendLineButton, &QPushButton::clicked, [this] {
-        upDateSendData(sendHexCheckBox->isHidden(), sendTextEdit->toPlainText());
+        sendType = SendType::Line;
+        upDateSendData(sendHexCheckBox->isChecked(), sendTextEdit->toPlainText());
         sendOneLineData();
+
+        startAutoSendTimerIfNeed();
+    });
+
+    connect(sendFixBytesButton, &QPushButton::clicked, [this] {
+        sendType = SendType::FixBytes;
+        upDateSendData(sendHexCheckBox->isChecked(), sendTextEdit->toPlainText());
+        sendFixedContData();
+        startAutoSendTimerIfNeed();
     });
 
     connect(sendButton, &QPushButton::clicked, [this](bool value) {
+        sendType = SendType::Normal;
         upDateSendData(sendHexCheckBox->isChecked(), sendTextEdit->toPlainText());
         sendAllData();
-        if (autoSendCheckBox->isChecked()) {
-            autoSendTimer->stop();
-            autoSendTimer->start(sendIntervalLineEdit->text().toInt());
-        }
+
+        startAutoSendTimerIfNeed();
     });
 
     connect(transferHexButton, &QPushButton::clicked, [this] {
@@ -395,7 +441,19 @@ void MainWindow::initConnect() {
     });
 
     connect(autoSendTimer, &QTimer::timeout, [this] {
-        sendAllData();
+        switch (sendType) {
+            case SendType::Normal:
+                sendAllData();
+                break;
+            case SendType::Frame:
+                sendOneFrameData();
+                break;
+            case SendType::Line:
+                sendOneLineData();
+            case SendType::FixBytes:
+                sendFixedContData();
+                break;
+        }
     });
 }
 
@@ -537,7 +595,6 @@ QByteArray MainWindow::getNextFrameData() {
         return data;
     } else {
         auto data = getNextFrameData(mySendData, lastIndex, frameInfo);
-        lastIndex = lastIndex + data.count();
         if (data.count() == 0) {
             lastIndex = 0;
         }
@@ -547,9 +604,10 @@ QByteArray MainWindow::getNextFrameData() {
 }
 
 QByteArray MainWindow::getNextLineData() {
-    if (mySendList == nullptr) {
+    if (mySendList == nullptr || mySendList->isEmpty()) {
         return QByteArray();
     }
+
     if (lastLineIndex + 1 > mySendList->count()) {
         lastLineIndex = 0;
     }
@@ -559,7 +617,7 @@ QByteArray MainWindow::getNextLineData() {
     if (sendHexCheckBox->isChecked()) {
         return dataFromHex(line);
     } else {
-        return  line.toLocal8Bit();
+        return line.toLocal8Bit();
     }
 }
 
@@ -586,6 +644,17 @@ void MainWindow::sendOneFrameData() {
 
 void MainWindow::sendOneLineData() {
     auto data = getNextLineData();
+    if (data.isEmpty()) {
+        return;
+    }
+    if (serialPort->isOpen()) {
+        serialPort->write(data);
+    }
+}
+
+
+void MainWindow::sendFixedContData() {
+    auto data = getNextFixedCountData(mySendData, lastIndex, byteCountLineEdit->text().toInt());
     if (data.isEmpty()) {
         return;
     }
@@ -621,7 +690,21 @@ QByteArray MainWindow::getNextFrameData(QByteArray *data, int startIndex, FrameI
     int headIndex = data->indexOf(frameInfo->head, startIndex);
     int endIndex = data->indexOf(frameInfo->end, startIndex + 1);
 
+    lastIndex = endIndex;
+
     return data->mid(headIndex, endIndex - headIndex + 1);
+}
+
+QByteArray MainWindow::getNextFixedCountData(QByteArray *data, int startIndex, int count) {
+    if (data == nullptr || data->isEmpty()) {
+        return QByteArray();
+    }
+    if (startIndex + count + 1 < data->count()) {
+        lastIndex = startIndex + count;
+    } else {
+        lastIndex = 0;
+    }
+    return data->mid(lastIndex, count);
 }
 
 void MainWindow::readSettings() {
@@ -663,8 +746,9 @@ void MainWindow::readSettings() {
     auto autoSend = settings.value("auto_send", false).toBool();
     auto autoSendInterval = settings.value("auto_send_interval", 100).toInt();
 
-    settings.beginGroup("FrameSettings");
     auto enableFrameInfo = settings.value("enable_frame_info", false).toBool();
+
+    auto fixByteCount = settings.value("fix_byte_count", false).toInt();
 
     sendHexCheckBox->setChecked(sendAsHex);
     displaySendDataCheckBox->setChecked(displaySendData);
@@ -673,6 +757,7 @@ void MainWindow::readSettings() {
     sendIntervalLineEdit->setText(QString::number(autoSendInterval));
 
     frameInfoSettingCheckBox->setChecked(enableFrameInfo);
+    byteCountLineEdit->setText(QString::number(fixByteCount));
 
     frameInfo = new FrameInfo(readFrameInfo());
 }
@@ -704,8 +789,10 @@ void MainWindow::writeSettings() {
     settings.setValue("auto_send", autoSendCheckBox->isChecked());
     settings.setValue("auto_send_interval", sendIntervalLineEdit->text().toInt());
 
-    settings.beginGroup("FrameSettings");
     settings.setValue("enable_frame_info", frameInfoSettingCheckBox->isChecked());
+
+    settings.setValue("fix_byte_count", byteCountLineEdit->text().toInt());
+
 
     settings.sync();
 
@@ -834,6 +921,15 @@ void MainWindow::sentData(const QByteArray &data) {
     sendCount += data.count();
     updateSendCount(sendCount);
 }
+
+void MainWindow::startAutoSendTimerIfNeed() {
+    if (autoSendCheckBox->isChecked()) {
+        autoSendTimer->stop();
+        autoSendTimer->start(sendIntervalLineEdit->text().toInt());
+    }
+}
+
+
 
 
 

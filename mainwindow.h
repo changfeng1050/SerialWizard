@@ -62,6 +62,8 @@ public slots:
 
     void sendOneLineData();
 
+    void sendFixedContData();
+
     void sendAllData();
 
 private slots:
@@ -97,6 +99,10 @@ private slots:
 
 private:
 
+    enum class SendType{
+        Normal, Frame, Line, FixBytes
+    };
+
     void readSettings();
 
     void writeSettings();
@@ -117,11 +123,15 @@ private:
 
     QByteArray getNextFrameData(QByteArray *data, int startIndex, FrameInfo *frameInfo);
 
+    QByteArray getNextFixedCountData(QByteArray *data, int startIndex, int count);
+
     void sendStatusMessage(const QString &msg);
 
     void updateSendCount(qint64 count);
 
     void updateReceiveCount(qint64 count);
+
+    void startAutoSendTimerIfNeed();
 
     //状态栏
     QLabel *statusBarReceiveByteCountLabel;
@@ -182,13 +192,17 @@ private:
 
     QPushButton *sendFrameButton;
     QPushButton *sendLineButton;
+    QPushButton *sendFixBytesButton;
+    QLineEdit *byteCountLineEdit;
     QPushButton *sendButton;
     QPushButton *transferHexButton;
     QPushButton *transferAsciiButton;
 
-    QTimer *autoSendTimer;
-    QByteArray *mySendData;
-    QStringList *mySendList;
+    SendType sendType{SendType ::Normal};
+
+    QTimer *autoSendTimer{nullptr};
+    QByteArray *mySendData{nullptr};
+    QStringList *mySendList{nullptr};
     QString sendText;
 
 };
