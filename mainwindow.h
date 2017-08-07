@@ -62,7 +62,7 @@ public slots:
 
     void sendOneLineData();
 
-    void sendFixedContData();
+    void sendFixedCountData();
 
     void sendAllData();
 

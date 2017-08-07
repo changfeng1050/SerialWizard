@@ -39,7 +39,10 @@ static QByteArray dataToHex(const QByteArray &data) {
 static QByteArray dataFromHex(const QString &hex) {
     QByteArray line = hex.toLatin1();
     line.replace(' ', QByteArray());
-    return QByteArray::fromHex(line);
+
+    auto result = QByteArray::fromHex(line);
+
+    return result;
 }
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), receiveCount(0), sendCount(0) {
@@ -244,10 +247,12 @@ void MainWindow::initUi() {
     auto sendBytByteCountLayout = new QVBoxLayout;
     sendBytByteCountLayout->addLayout(byteCountLayout);
     sendBytByteCountLayout->addWidget(sendFixBytesButton);
-
-
     fixBytesGroupBox->setLayout(sendBytByteCountLayout);
 
+    auto optionSendLayout = new QVBoxLayout;
+    optionSendLayout->addWidget(frameGroupBox);
+    optionSendLayout->addWidget(lineGroupBox);
+    optionSendLayout->addWidget(fixBytesGroupBox);
 
     sendDataBrowser = new QTextBrowser(this);
 
@@ -268,6 +273,7 @@ void MainWindow::initUi() {
     sendButtonLayout->addWidget(sendButton);
 
     auto sendLayout = new QHBoxLayout;
+    sendLayout->addLayout(optionSendLayout);
     sendLayout->addWidget(sendTextEdit);
     sendLayout->addLayout(sendButtonLayout);
 
@@ -279,9 +285,9 @@ void MainWindow::initUi() {
     mainVBoxLayout1->addWidget(receiveSettingGroupBox);
     mainVBoxLayout1->addWidget(sendSettingGroupBox);
     mainVBoxLayout1->addWidget(autoSendGroupBox);
-    mainVBoxLayout1->addWidget(frameGroupBox);
-    mainVBoxLayout1->addWidget(lineGroupBox);
-    mainVBoxLayout1->addWidget(fixBytesGroupBox);
+//    mainVBoxLayout1->addWidget(frameGroupBox);
+//    mainVBoxLayout1->addWidget(lineGroupBox);
+//    mainVBoxLayout1->addWidget(fixBytesGroupBox);
     mainVBoxLayout1->addStretch();
 
     auto mainVBoxLayout2 = new QVBoxLayout;
@@ -417,7 +423,7 @@ void MainWindow::initConnect() {
     connect(sendFixBytesButton, &QPushButton::clicked, [this] {
         sendType = SendType::FixBytes;
         upDateSendData(sendHexCheckBox->isChecked(), sendTextEdit->toPlainText());
-        sendFixedContData();
+        sendFixedCountData();
         startAutoSendTimerIfNeed();
     });
 
@@ -450,8 +456,9 @@ void MainWindow::initConnect() {
                 break;
             case SendType::Line:
                 sendOneLineData();
+                break;
             case SendType::FixBytes:
-                sendFixedContData();
+                sendFixedCountData();
                 break;
         }
     });
@@ -614,6 +621,7 @@ QByteArray MainWindow::getNextLineData() {
     auto line = (*mySendList)[lastLineIndex];
     lastLineIndex++;
 
+//    qDebug() << "getNextLineData()"  << line;
     if (sendHexCheckBox->isChecked()) {
         return dataFromHex(line);
     } else {
@@ -648,12 +656,13 @@ void MainWindow::sendOneLineData() {
         return;
     }
     if (serialPort->isOpen()) {
+        qDebug() << "sendOneLineData()" << data.toHex();
         serialPort->write(data);
     }
 }
 
 
-void MainWindow::sendFixedContData() {
+void MainWindow::sendFixedCountData() {
     auto data = getNextFixedCountData(mySendData, lastIndex, byteCountLineEdit->text().toInt());
     if (data.isEmpty()) {
         return;
@@ -664,6 +673,9 @@ void MainWindow::sendFixedContData() {
 }
 
 void MainWindow::upDateSendData(bool isHex, const QString &text) {
+    if (mySendData != nullptr) {
+        return;
+    }
     if (mySendData == nullptr) {
         mySendData = new QByteArray;
     }
@@ -682,7 +694,8 @@ void MainWindow::upDateSendData(bool isHex, const QString &text) {
     QTextStream in(&text_temp);
 
     while (!in.atEnd()) {
-        *mySendList << in.readLine();
+        auto line = in.readLine();
+        *mySendList << line;
     }
 }
 
@@ -924,7 +937,6 @@ void MainWindow::sentData(const QByteArray &data) {
 
 void MainWindow::startAutoSendTimerIfNeed() {
     if (autoSendCheckBox->isChecked()) {
-        autoSendTimer->stop();
         autoSendTimer->start(sendIntervalLineEdit->text().toInt());
     }
 }
