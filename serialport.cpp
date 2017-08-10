@@ -1,6 +1,7 @@
 #include "serialport.h"
 
 #include <QDebug>
+#include <utility>
 
 SerialPort::SerialPort(QObject *parent)
         : QObject(parent) {
@@ -10,7 +11,7 @@ SerialPort::SerialPort(QObject *parent)
 SerialPort::SerialPort(SerialSettings settings, QObject *parent)
         : QObject(parent) {
     this->settings = new SerialSettings();
-    *this->settings = settings;
+    *this->settings = std::move(settings);
 }
 
 SerialPort::~SerialPort() = default;

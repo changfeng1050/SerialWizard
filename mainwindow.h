@@ -39,7 +39,7 @@ public:
 
     void initUi();
 
-    void initConnect();
+    void createConnect();
 
     void createStatusBar();
 
@@ -97,10 +97,16 @@ private slots:
 
     void saveSentData();
 
+    void handlerSerialNotOpen();
+
 private:
 
-    enum class SendType{
+    enum class SendType {
         Normal, Frame, Line, FixBytes
+    };
+
+    enum class AutoSendState {
+        NotStart, Sending, Finish
     };
 
     void readSettings();
@@ -132,6 +138,11 @@ private:
     void updateReceiveCount(qint64 count);
 
     void startAutoSendTimerIfNeed();
+
+    void stopAutoSend();
+
+    void resetSendButtonText();
+
 
     //状态栏
     QLabel *statusBarReceiveByteCountLabel;
@@ -177,7 +188,7 @@ private:
     QCheckBox *displaySendDataAsHexCheckBox;
     QCheckBox *autoSendCheckBox;
     QLineEdit *sendIntervalLineEdit;
-    QCheckBox *frameInfoSettingCheckBox;
+    QPushButton *frameInfoSettingButton;
     QPushButton *saveSentDataButton;
     QPushButton *clearSentDataButton;
 
@@ -198,7 +209,9 @@ private:
     QPushButton *transferHexButton;
     QPushButton *transferAsciiButton;
 
-    SendType sendType{SendType ::Normal};
+    SendType sendType{SendType::Normal};
+
+    AutoSendState autoSendState{AutoSendState::NotStart};
 
     QTimer *autoSendTimer{nullptr};
     QByteArray *mySendData{nullptr};
