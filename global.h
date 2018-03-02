@@ -20,5 +20,11 @@ extern bool showWarning(const QString &title, const QString &text, QWidget *pare
 
 extern void showMessage(const QString &title, const QString &text, QWidget *parent = nullptr);
 
+extern QString getFileSuffix(const QString &filePath);
+
+extern QString getFileDir(const QString &filePath);
+
+extern QString getIp();
+
 
 #endif //SERIALWIZARD_GLOBAL_H

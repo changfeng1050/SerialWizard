@@ -20,13 +20,14 @@
 #include <QtCore/QProcess>
 #include <QStatusBar>
 #include <QSplitter>
+#include <QTcpServer>
+#include <QTcpSocket>
 
 #include "MainWindow.h"
 #include "CalculateCheckSumDialog.h"
 #include "global.h"
 
 int lastIndex = 0;
-int lastLineIndex = 0;
 
 static QByteArray dataToHex(const QByteArray &data) {
     QByteArray result = data.toHex().toUpper();
@@ -38,9 +39,9 @@ static QByteArray dataToHex(const QByteArray &data) {
 }
 
 static QByteArray dataFromHex(const QString &hex) {
+
     QByteArray line = hex.toLatin1();
     line.replace(' ', QByteArray());
-
     auto result = QByteArray::fromHex(line);
 
     return result;
@@ -82,7 +83,7 @@ void MainWindow::initUi() {
 
     setWindowTitle(tr("串口调试工具"));
 
-    setMinimumSize(1024, 600);
+    setMinimumSize(1024, 768);
     auto serialPortNameLabel = new QLabel(tr("串口"), this);
     QStringList serialPortNameList;
     for (int i = 0; i < 20; ++i) {
@@ -145,6 +146,7 @@ void MainWindow::initUi() {
 
     openSerialButton = new QPushButton(tr("打开"), this);
 
+
     auto serialPortSettingsLayout = new QVBoxLayout;
     serialPortSettingsLayout->addLayout(serialPortSettingsGridLayout);
     serialPortSettingsLayout->addWidget(openSerialButton);
@@ -152,6 +154,22 @@ void MainWindow::initUi() {
     auto serialPortGroupBox = new QGroupBox(tr("串口设置"));
     serialPortGroupBox->setLayout(serialPortSettingsLayout);
 
+    tcpAddressLineEdit = new QLineEdit(this);
+    tcpAddressLineEdit->setMaximumWidth(100);
+    tcpAddressLineEdit->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Minimum);
+    tcpPortLineEdit = new QLineEdit(this);
+    tcpPortLineEdit->setMaximumWidth(50);
+    tcpPortLineEdit->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Minimum);
+
+    listenButton = new QPushButton(tr("监听"), this);
+
+    auto tcpLayout = new QHBoxLayout;
+    tcpLayout->addWidget(tcpAddressLineEdit);
+    tcpLayout->addWidget(tcpPortLineEdit);
+    tcpLayout->addWidget(listenButton);
+
+    auto tcpGroupBox = new QGroupBox(tr("TCP服务器"));
+    tcpGroupBox->setLayout(tcpLayout);
 
     addLineReturnCheckBox = new QCheckBox(tr("自动换行"), this);
     displayReceiveDataAsHexCheckBox = new QCheckBox(tr("按十六进制显示"), this);
@@ -204,6 +222,28 @@ void MainWindow::initUi() {
     autoSendLayout->addLayout(sendIntervalLayout);
     auto autoSendGroupBox = new QGroupBox("自动发送设置");
     autoSendGroupBox->setLayout(autoSendLayout);
+
+    loopSendCheckBox = new QCheckBox(tr("循环发送"), this);
+    currentSendCountLineEdit = new QLineEdit(this);
+    currentSendCountLineEdit->setMaximumWidth(50);
+    currentSendCountLineEdit->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Minimum);
+    auto currentSendCountLabel = new QLabel(tr("计数"), this);
+    currentSendCountLabel->setBuddy(currentSendCountLineEdit);
+    auto totalSendCountText = new QLabel(tr("总数"), this);
+    totalSendCountLabel = new QLabel(this);
+    totalSendCountText->setBuddy(totalSendCountLabel);
+
+    auto sendCountLayout = new QHBoxLayout;
+    sendCountLayout->addWidget(currentSendCountLabel);
+    sendCountLayout->addWidget(currentSendCountLineEdit);
+    sendCountLayout->addWidget(totalSendCountText);
+    sendCountLayout->addWidget(totalSendCountLabel);
+
+    auto loopSendLayout = new QVBoxLayout;
+    loopSendLayout->addWidget(loopSendCheckBox);
+    loopSendLayout->addLayout(sendCountLayout);
+    auto loopSendGroupBox = new QGroupBox(tr("循环发送设置"), this);
+    loopSendGroupBox->setLayout(loopSendLayout);
 
     saveSentDataButton = new QPushButton(tr("保存数据"), this);
     clearSentDataButton = new QPushButton(tr("清除显示"), this);
@@ -302,9 +342,11 @@ void MainWindow::initUi() {
 
     auto mainVBoxLayout1 = new QVBoxLayout;
     mainVBoxLayout1->addWidget(serialPortGroupBox);
+    mainVBoxLayout1->addWidget(tcpGroupBox);
     mainVBoxLayout1->addWidget(receiveSettingGroupBox);
     mainVBoxLayout1->addWidget(sendSettingGroupBox);
     mainVBoxLayout1->addWidget(autoSendGroupBox);
+    mainVBoxLayout1->addWidget(loopSendGroupBox);
 //    mainVBoxLayout1->addWidget(frameGroupBox);
 //    mainVBoxLayout1->addWidget(lineGroupBox);
 //    mainVBoxLayout1->addWidget(fixBytesGroupBox);
@@ -407,6 +449,19 @@ void MainWindow::createConnect() {
         }
     });
 
+    connect(listenButton, &QPushButton::clicked, [=](bool value) {
+        if (serialPort->isOpen()) {
+            serialPort->close();
+            emit serialStateChanged(false);
+        }
+
+        auto address = tcpAddressLineEdit->text();
+        auto port = tcpPortLineEdit->text().toInt();
+
+        listen(address, port);
+
+    });
+
     connect(saveReceiveDataButton, &QPushButton::clicked, this, &MainWindow::saveReceivedData);
     connect(clearReceiveDataButton, &QPushButton::clicked, this, &MainWindow::clearReceivedData);
 
@@ -420,6 +475,10 @@ void MainWindow::createConnect() {
 
     connect(serialPort, &SerialPort::dataReceived, this, &MainWindow::receivedData);
     connect(serialPort, &SerialPort::dataSent, this, &MainWindow::sentData);
+
+    connect(loopSendCheckBox, &QCheckBox::stateChanged, [this] {
+        loopSend = loopSendCheckBox->isChecked();
+    });
 
     connect(frameInfoSettingButton, &QPushButton::clicked, [this] {
         openFrameInfoSettingDialog();
@@ -455,18 +514,19 @@ void MainWindow::createConnect() {
     });
 
     connect(sendLineButton, &QPushButton::clicked, [this] {
-        if (!serialPort->isOpen()) {
-            handlerSerialNotOpen();
-            return;
-        }
+//        if (!serialPort->isOpen() || (tcpServer != nullptr && !tcpServer->isListening())) {
+//            handlerSerialNotOpen();
+//            return;
+//        }
+
 
         if (autoSendState == AutoSendState::Sending) {
             stopAutoSend();
         } else {
             sendType = SendType::Line;
             upDateSendData(sendHexCheckBox->isChecked(), sendTextEdit->toPlainText());
-            sendOneLineData();
 
+            sendOneLineData();
             startAutoSendTimerIfNeed();
         }
 
@@ -551,7 +611,11 @@ void MainWindow::createConnect() {
                         break;
                     case
                         SendType::Line:
-                        sendOneLineData();
+                        if (loopSend || currentSendCount < totalSendCount) {
+                            sendOneLineData();
+                        } else {
+                            autoSendTimer->stop();
+                        }
                         break;
                     case
                         SendType::FixBytes:
@@ -599,15 +663,16 @@ void MainWindow::createMenu() {
 }
 
 void MainWindow::open() {
-    QString fileName = QFileDialog::getOpenFileName(this, tr("打开数据文件"), "/", "");
+    auto lastDir = runConfig->lastDir;
+    QString fileName = QFileDialog::getOpenFileName(this, tr("打开数据文件"), lastDir, "");
     if (fileName.isEmpty()) {
         return;
     }
 
     QFile file(fileName);
     if (file.open(QIODevice::ReadOnly)) {
+        runConfig->lastDir = getFileDir(fileName);
         auto data = file.readAll();
-
         sendTextEdit->setText(QString::fromLocal8Bit(data));
     }
 }
@@ -712,13 +777,12 @@ QByteArray MainWindow::getNextLineData() {
         return QByteArray();
     }
 
-    if (lastLineIndex + 1 > mySendList->count()) {
-        lastLineIndex = 0;
+    if (currentSendCount + 1 > mySendList->count()) {
+        currentSendCount = 0;
     }
-    auto line = (*mySendList)[lastLineIndex];
-    lastLineIndex++;
-
-//    qDebug() << "getNextLineData()"  << line;
+    auto line = (*mySendList)[currentSendCount];
+    currentSendCount++;
+    qDebug() << currentSendCount << mySendList->count();
     if (sendHexCheckBox->isChecked()) {
         return dataFromHex(line);
     } else {
@@ -760,6 +824,8 @@ void MainWindow::sendOneLineData() {
     }
     if (serialPort->isOpen()) {
         serialPort->write(data);
+    } else if (tcpServer != nullptr && tcpServer->isListening()) {
+        tcpSocket->write(data);
     } else {
         handlerSerialNotOpen();
     }
@@ -798,6 +864,9 @@ void MainWindow::upDateSendData(bool isHex, const QString &text) {
         auto line = in.readLine();
         *mySendList << line;
     }
+
+    totalSendCount = mySendList->count();
+    updateTotalSendCount(totalSendCount);
 }
 
 QByteArray MainWindow::getNextFrameData(QByteArray *data, int startIndex, FrameInfo *frameInfo) {
@@ -843,7 +912,6 @@ void MainWindow::readSettings() {
 
     sendTextEdit->setText(sendText);
 
-
     settings.beginGroup("SerialReceiveSettings");
     auto addLineReturn = settings.value("add_line_return", true).toBool();
     auto displayReceiveDataAsHex = settings.value("display_receive_data_as_hex", false).toBool();
@@ -874,6 +942,21 @@ void MainWindow::readSettings() {
     byteCountLineEdit->setText(QString::number(fixByteCount));
 
     frameInfo = new FrameInfo(readFrameInfo());
+
+    settings.beginGroup("TcpSettings");
+    auto tcpPort = settings.value("tcp_port").toInt();
+
+    tcpPortLineEdit->setText(QString::number(tcpPort));
+
+    settings.beginGroup("RunConfig");
+    auto lastDir = settings.value("last_dir", "").toString();
+    auto lastFilePath = settings.value("last_file_path", "").toString();
+
+    runConfig = new RunConfig;
+    runConfig->lastDir = lastDir;
+    runConfig->lastFilePath = lastFilePath;
+
+    tcpAddressLineEdit->setText(getIp());
 }
 
 void MainWindow::writeSettings() {
@@ -907,6 +990,12 @@ void MainWindow::writeSettings() {
 
     settings.setValue("fix_byte_count", byteCountLineEdit->text().toInt());
 
+    settings.beginGroup("TcpSettings");
+    settings.setValue("tcp_port", tcpPortLineEdit->text().toInt());
+
+    settings.beginGroup("RunConfig");
+    settings.setValue("last_dir", runConfig->lastDir);
+    settings.setValue("last_file_path", runConfig->lastFilePath);
 
     settings.sync();
 
@@ -984,10 +1073,10 @@ void MainWindow::clearSentData() {
     sendDataBrowser->clear();
 }
 
-
 void MainWindow::saveSentData() {
+    auto lastDir = runConfig->lastDir;
     QString fileName = QFileDialog::getSaveFileName(this, tr("保存发送数据"),
-                                                    "/",
+                                                    lastDir,
                                                     tr("Text (*.txt)"));
     if (fileName.isEmpty()) {
         return;
@@ -998,6 +1087,9 @@ void MainWindow::saveSentData() {
 
     QFile file(fileName);
     if (file.open(QIODevice::WriteOnly)) {
+
+        runConfig->lastDir = getFileDir(fileName);
+
         QDataStream in(&file);
 
         in << sendDataBrowser->toPlainText().toLocal8Bit();
@@ -1018,6 +1110,7 @@ void MainWindow::sendStatusMessage(const QString &msg) {
 
 void MainWindow::updateSendCount(qint64 count) {
     statusBarSendByteCountLabel->setText(QString::number(count));
+    currentSendCountLineEdit->setText(QString::number(currentSendCount));
 }
 
 void MainWindow::updateReceiveCount(qint64 count) {
@@ -1062,6 +1155,33 @@ void MainWindow::resetSendButtonText() {
     sendLineButton->setText(tr("发送下一行"));
     sendFixBytesButton->setText("发送下一帧");
     sendButton->setText("发送");
+}
+
+void MainWindow::updateTotalSendCount(qint64 count) {
+    totalSendCountLabel->setText(QString::number(count));
+}
+
+bool MainWindow::listen(const QString &address, const int port) {
+    if (tcpServer == nullptr) {
+        tcpServer = new QTcpServer(this);
+        connect(tcpServer, &QTcpServer::newConnection, [=] {
+            qDebug() << "new connection()";
+            if (tcpSocket != nullptr) {
+                tcpSocket->close();
+            }
+            tcpSocket = tcpServer->nextPendingConnection();
+            connect(tcpSocket, &QTcpSocket::readyRead, [=] {
+                auto data = tcpSocket->readAll();
+                receivedData(data);
+            });
+        });
+    }
+
+    if (!tcpServer->isListening()) {
+        tcpServer->listen(QHostAddress::Any, port);
+    }
+
+    return false;
 }
 
 

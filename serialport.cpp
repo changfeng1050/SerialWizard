@@ -1,7 +1,6 @@
 #include "serialport.h"
 
 #include <QDebug>
-#include <utility>
 
 SerialPort::SerialPort(QObject *parent)
         : QObject(parent) {
@@ -72,21 +71,6 @@ qint64 SerialPort::write(QByteArray &data) {
 
     return ret;
 }
-//
-//qint64 SerialPort::write(const char *data) {
-//    if (serial == nullptr) {
-//        return 0;
-//    }
-//    return serial->write(data);
-//}
-//
-//qint64 SerialPort::write(const char *data, qint64 len) {
-//    if (serial == nullptr) {
-//        return 0;
-//    }
-//    return serial->write(data, len);
-//}
-
 bool SerialPort::isOpen() {
     return serial != nullptr && serial->isOpen();
 }

@@ -25,9 +25,18 @@ class QTimer;
 
 class SerialSettings;
 
+class QTcpServer;
+
+class QTcpSocket;
+
 #include <QtWidgets/QMainWindow>
 #include "FrameInfoDialog.h"
 #include "serialport.h"
+
+struct RunConfig {
+    QString lastDir;
+    QString lastFilePath;
+};
 
 
 class MainWindow : public QMainWindow {
@@ -88,7 +97,6 @@ private slots:
 
     void openFrameInfoSettingDialog();
 
-
     void clearReceivedData();
 
     void saveReceivedData();
@@ -143,6 +151,11 @@ private:
 
     void resetSendButtonText();
 
+    void updateTotalSendCount(qint64 count);
+
+    bool listen(const QString &address, const int port);
+
+    RunConfig *runConfig{nullptr};
 
     //状态栏
     QLabel *statusBarReceiveByteCountLabel;
@@ -163,6 +176,9 @@ private:
     SerialPort *serialPort;
     SerialSettings *serialSettings;
 
+    QTcpServer *tcpServer{nullptr};
+    QTcpSocket *tcpSocket{nullptr};
+
     qint64 sendCount;
     qint64 receiveCount;
 
@@ -173,6 +189,11 @@ private:
     QComboBox *serialPortDataBitsComboBox;
     QComboBox *serialPortStopBitsComboBox;
     QPushButton *openSerialButton;
+
+    // TCP设置
+    QLineEdit *tcpAddressLineEdit;
+    QLineEdit *tcpPortLineEdit;
+    QPushButton *listenButton;
 
     // 接收设置
     QCheckBox *addLineReturnCheckBox;
@@ -192,6 +213,9 @@ private:
     QPushButton *saveSentDataButton;
     QPushButton *clearSentDataButton;
 
+    QCheckBox *loopSendCheckBox;
+    QLineEdit *currentSendCountLineEdit;
+    QLabel *totalSendCountLabel;
 
     FrameInfo *frameInfo;
 
@@ -218,6 +242,10 @@ private:
     QStringList *mySendList{nullptr};
     QString sendText;
 
+    int currentSendCount{0};
+    int totalSendCount{0};
+
+    bool loopSend{false};
 };
 
 
