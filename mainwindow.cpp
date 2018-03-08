@@ -485,6 +485,16 @@ void MainWindow::createConnect() {
         emit currentWriteCountChanged(currentSendCount);
     });
 
+    connect(currentSendCountLineEdit, &QLineEdit::editingFinished, [this] {
+        bool ok;
+        auto newCount = currentSendCountLineEdit->text().toInt(&ok);
+        if (ok) {
+            currentSendCount = newCount;
+        } else {
+            currentSendCountLineEdit->setText(QString::number(currentSendCount));
+        }
+    });
+
     connect(frameInfoSettingButton, &QPushButton::clicked, [this] {
         openFrameInfoSettingDialog();
     });
