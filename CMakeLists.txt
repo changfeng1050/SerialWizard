@@ -3,7 +3,7 @@ project(SerialWizard)
 
 set(CMAKE_CXX_STANDARD 17)
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
+#set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
 
 set(CMAKE_CXX_FLAGS_COVERAGE "${CMAKE_CXX_FLAGS_RELEASE} -fprofile-arcs -ftest-coverage")
 
@@ -25,8 +25,7 @@ foreach (plugin ${Qt5Network_PLUGINS})
 endforeach ()
 
 
-set(SOURCE_FILES main.cpp SerialPort.cpp SerialPort.h MainWindow.cpp MainWindow.h CalculateCheckSumDialog.cpp CalculateCheckSumDialog.h FrameInfoDialog.cpp FrameInfoDialog.h global.cpp global.h)
+set(SOURCE_FILES main.cpp MainWindow.cpp MainWindow.h CalculateCheckSumDialog.cpp CalculateCheckSumDialog.h FrameInfoDialog.cpp FrameInfoDialog.h global.cpp global.h data/AbstractReadWriter.cpp data/AbstractReadWriter.h data/SerialReadWriter.cpp data/SerialReadWriter.h data/TcpReadWriter.cpp data/TcpReadWriter.h)
 #add_executable(SerialWizard ${SOURCE_FILES})
 add_executable(SerialWizard WIN32 ${SOURCE_FILES})
-
 qt5_use_modules(SerialWizard Widgets Core SerialPort Network)

@@ -9,8 +9,6 @@ class QPushButton;
 
 class QComboBox;
 
-class SerialPort;
-
 class QTextBrowser;
 
 class QCheckBox;
@@ -25,13 +23,10 @@ class QTimer;
 
 class SerialSettings;
 
-class QTcpServer;
-
-class QTcpSocket;
+class AbstractReadWriter;
 
 #include <QtWidgets/QMainWindow>
 #include "FrameInfoDialog.h"
-#include "serialport.h"
 
 struct RunConfig {
     QString lastDir;
@@ -61,11 +56,18 @@ signals:
 
     void serialStateChanged(bool);
 
+    void writeBytesChanged(qint64 bytes);
+
+    void readBytesChanged(qint64 bytes);
+
+    void currentWriteCountChanged(qint64 count);
+
 public slots:
 
-    void openSerialPort();
 
-    void closeSerialPort();
+    void openReadWriter();
+
+    void closeReadWriter();
 
     void sendOneFrameData();
 
@@ -75,13 +77,11 @@ public slots:
 
     void sendAllData();
 
-private slots:
+    void readData();
 
-    void receivedData(const QByteArray &data);
+    qint64 writeData(const QByteArray &data);
 
-    void sentData(const QByteArray &data);
-
-    void setOpenSerialButtonText(bool isOpen);
+    void setOpenButtonText(bool isOpen);
 
     void displayReceiveData(const QByteArray &data);
 
@@ -107,6 +107,15 @@ private slots:
 
     void handlerSerialNotOpen();
 
+    void updateStatusMessage(const QString &message);
+
+    void updateReadBytes(qint64 bytes);
+
+    void updateWriteBytes(qint64 bytes);
+
+    void udpateCurrentWriteCount(qint64 count);
+
+
 private:
 
     enum class SendType {
@@ -116,6 +125,8 @@ private:
     enum class AutoSendState {
         NotStart, Sending, Finish
     };
+
+    bool isReadWriterOpen();
 
     void readSettings();
 
@@ -153,15 +164,12 @@ private:
 
     void updateTotalSendCount(qint64 count);
 
-    bool listen(const QString &address, const int port);
-
     RunConfig *runConfig{nullptr};
 
     //状态栏
-    QLabel *statusBarReceiveByteCountLabel;
-    QLabel *statusBarSendByteCountLabel;
+    QLabel *statusBarReadBytesLabel;
+    QLabel *statusBarWriteBytesLabel;
     QPushButton *statusBarResetCountButton;
-
 
     QMenu *fileMenu;
     QMenu *editMenu;
@@ -173,14 +181,10 @@ private:
     QAction *exitAct;
     QAction *validateDataAct;
 
-    SerialPort *serialPort;
-    SerialSettings *serialSettings;
+    AbstractReadWriter *_readWriter{nullptr};
 
-    QTcpServer *tcpServer{nullptr};
-    QTcpSocket *tcpSocket{nullptr};
-
-    qint64 sendCount;
-    qint64 receiveCount;
+    qint64 sendCount{0};
+    qint64 receiveCount{0};
 
     // 串口设置
     QComboBox *serialPortNameComboBox;
@@ -193,7 +197,6 @@ private:
     // TCP设置
     QLineEdit *tcpAddressLineEdit;
     QLineEdit *tcpPortLineEdit;
-    QPushButton *listenButton;
 
     // 接收设置
     QCheckBox *addLineReturnCheckBox;
@@ -214,6 +217,7 @@ private:
     QPushButton *clearSentDataButton;
 
     QCheckBox *loopSendCheckBox;
+    QPushButton *resetLoopSendButton;
     QLineEdit *currentSendCountLineEdit;
     QLabel *totalSendCountLabel;
 
@@ -240,7 +244,6 @@ private:
     QTimer *autoSendTimer{nullptr};
     QByteArray *mySendData{nullptr};
     QStringList *mySendList{nullptr};
-    QString sendText;
 
     int currentSendCount{0};
     int totalSendCount{0};
