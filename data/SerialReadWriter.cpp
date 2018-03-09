@@ -64,3 +64,7 @@ QString SerialReadWriter::settingsText() const {
     return QString("%1 %2 %3 %4 %5").arg(settings.name).arg(settings.baudRate).arg(settings.dataBits).arg(
             settings.stopBits).arg(settings.parity);
 }
+
+bool SerialReadWriter::isConnected() {
+    return serial != nullptr && serial->isOpen();
+}

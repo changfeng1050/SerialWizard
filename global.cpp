@@ -69,7 +69,15 @@ QString getIp() {
             return address.toString();
         }
     }
+    for (auto address:ipAddress) {
+        if (address.protocol() == QAbstractSocket::IPv6Protocol) {
+            return address.toString();
+        }
+    }
 
     return "";
+}
 
+QString getAddressString(const QHostAddress &address) {
+    return address.toString();
 }

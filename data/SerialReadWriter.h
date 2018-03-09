@@ -32,6 +32,8 @@ public:
 
     bool isOpen() override;
 
+    bool isConnected() override;
+
     void close() override;
 
     QByteArray readAll() override;

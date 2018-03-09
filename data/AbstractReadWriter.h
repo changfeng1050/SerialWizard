@@ -17,6 +17,8 @@ public:
 
     virtual bool isOpen()=0;
 
+    virtual bool isConnected() =0;
+
     virtual void close()=0;
 
     virtual QByteArray readAll()=0;
@@ -26,6 +28,7 @@ public:
     virtual QString settingsText() const =0;
 
 signals:
+
     void readyRead();
 };
 

@@ -21,6 +21,8 @@ public:
 
     bool isOpen() override;
 
+    bool isConnected() override;
+
     QString settingsText() const override;
 
     void close() override;
@@ -32,6 +34,13 @@ public:
     QByteArray readAll() override;
 
     qint64 write(const QByteArray &byteArray) const override;
+
+signals:
+
+    void currentSocketChanged(const QString &address, qint16 port);
+
+    void connectionClosed();
+
 
 private:
     QTcpServer *_tcpServer{nullptr};

@@ -25,6 +25,12 @@ class SerialSettings;
 
 class AbstractReadWriter;
 
+class QRadioButton;
+
+class QTabWidget;
+
+class QButtonGroup;
+
 #include <QtWidgets/QMainWindow>
 #include "FrameInfoDialog.h"
 
@@ -113,7 +119,11 @@ public slots:
 
     void updateWriteBytes(qint64 bytes);
 
-    void udpateCurrentWriteCount(qint64 count);
+    void updateCurrentWriteCount(qint64 count);
+
+    void updateTcpClient(const QString &address, qint16 port);
+
+    void clearTcpClient();
 
 
 private:
@@ -127,6 +137,8 @@ private:
     };
 
     bool isReadWriterOpen();
+
+    bool isReadWriterConnected();
 
     void readSettings();
 
@@ -186,6 +198,13 @@ private:
     qint64 sendCount{0};
     qint64 receiveCount{0};
 
+    QRadioButton *serialRadioButton;
+    QRadioButton *tcpRadioButton;
+
+    QTabWidget *readWriterTabWidget;
+
+    QButtonGroup *readWriterButtonGroup;
+
     // 串口设置
     QComboBox *serialPortNameComboBox;
     QComboBox *serialPortBaudRateComboBox;
@@ -197,6 +216,7 @@ private:
     // TCP设置
     QLineEdit *tcpAddressLineEdit;
     QLineEdit *tcpPortLineEdit;
+    QLabel *tcpClientLabel;
 
     // 接收设置
     QCheckBox *addLineReturnCheckBox;

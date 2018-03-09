@@ -21,7 +21,19 @@ bool TcpReadWriter::open() {
         }
         _tcpSocket = _tcpServer->nextPendingConnection();
         connect(_tcpSocket, &QTcpSocket::readyRead, this, &TcpReadWriter::readyRead);
+        connect(_tcpSocket, &QTcpSocket::disconnected, [this] {
+            emit connectionClosed();
+        });
+
+        auto address = _tcpSocket->peerAddress().toString();
+        if (address.contains(':')) {
+            auto index = address.lastIndexOf(':');
+            address = address.right(address.count() - index - 1);
+        }
+        auto port = _tcpSocket->peerPort();
+        emit currentSocketChanged(address, port);
     });
+
 
     if (!_tcpServer->isListening()) {
         return _tcpServer->listen(QHostAddress::Any, static_cast<quint16>(_port));
@@ -30,7 +42,7 @@ bool TcpReadWriter::open() {
 }
 
 bool TcpReadWriter::isOpen() {
-    return _tcpServer != nullptr && _tcpServer->isListening() && _tcpSocket != nullptr && _tcpSocket->isOpen();
+    return _tcpServer != nullptr && _tcpServer->isListening();
 }
 
 void TcpReadWriter::close() {
@@ -42,11 +54,12 @@ void TcpReadWriter::close() {
         _tcpServer = nullptr;
     }
 
+
     if (_tcpSocket != nullptr) {
         if (_tcpSocket->isOpen()) {
             _tcpSocket->close();
         }
-        delete _tcpSocket;
+//        delete _tcpSocket;
         _tcpSocket = nullptr;
     }
 }
@@ -77,4 +90,8 @@ void TcpReadWriter::setPort(int port) {
 
 QString TcpReadWriter::settingsText() const {
     return QString("%1 %2").arg(_address).arg(_port);
+}
+
+bool TcpReadWriter::isConnected() {
+    return isOpen() && _tcpSocket != nullptr && _tcpSocket->isOpen();
 }
