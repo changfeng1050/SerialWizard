@@ -27,8 +27,6 @@ class AbstractReadWriter;
 
 class QRadioButton;
 
-class QTabWidget;
-
 class QButtonGroup;
 
 #include <QtWidgets/QMainWindow>
@@ -176,6 +174,10 @@ private:
 
     void updateTotalSendCount(qint64 count);
 
+    void showReadData(const QByteArray &data);
+
+    void showSendData(const QByteArray &data);
+
     RunConfig *runConfig{nullptr};
 
     //状态栏
@@ -200,8 +202,8 @@ private:
 
     QRadioButton *serialRadioButton;
     QRadioButton *tcpRadioButton;
+    QRadioButton *brigdeRadioButton;
 
-    QTabWidget *readWriterTabWidget;
 
     QButtonGroup *readWriterButtonGroup;
 

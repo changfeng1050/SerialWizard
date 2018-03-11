@@ -28,7 +28,6 @@ public:
     virtual QString settingsText() const =0;
 
 signals:
-
     void readyRead();
 };
 

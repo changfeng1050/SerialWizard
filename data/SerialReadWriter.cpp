@@ -36,7 +36,7 @@ QByteArray SerialReadWriter::readAll() {
     if (serial != nullptr && serial->isOpen()) {
         return serial->readAll();
     }
-    qDebug() << "SerialReadWriter readAll() serial == nullptr or not open";
+    qDebug() << "SerialReadWriter readAll() _serial == nullptr or not open";
     return QByteArray();
 }
 
@@ -44,7 +44,7 @@ qint64 SerialReadWriter::write(const QByteArray &byteArray) const {
     if (serial != nullptr && serial->isOpen()) {
         return serial->write(byteArray);
     }
-    qDebug() << "SerialReadWriter readAll() serial == nullptr or not open";
+    qDebug() << "SerialReadWriter readAll() _serial == nullptr or not open";
     return 0;
 }
 
