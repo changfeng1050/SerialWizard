@@ -103,6 +103,10 @@ void MainWindow::initUi() {
     readWriterButtonLayout->addWidget(tcpRadioButton);
     readWriterButtonLayout->addWidget(brigdeRadioButton);
 
+
+    auto readWriterButtonGroupBox = new QGroupBox(tr("打开模式"));
+    readWriterButtonGroupBox->setLayout(readWriterButtonLayout);
+
     auto serialPortNameLabel = new QLabel(tr("串口"), this);
     QStringList serialPortNameList;
     for (int i = 0; i < 40; ++i) {
@@ -164,6 +168,9 @@ void MainWindow::initUi() {
     serialPortSettingsGridLayout->addWidget(serialPortParityLabel, 4, 0);
     serialPortSettingsGridLayout->addWidget(serialPortParityComboBox, 4, 1);
 
+    auto serialPortSettingsGroupBox = new QGroupBox(tr("串口设置"));
+    serialPortSettingsGroupBox->setLayout(serialPortSettingsGridLayout);
+
     openSerialButton = new QPushButton(tr("打开"), this);
 
     tcpAddressLineEdit = new QLineEdit(this);
@@ -184,9 +191,8 @@ void MainWindow::initUi() {
     tcpLayout->addWidget(tcpClientLabel);
     tcpLayout->addStretch();
 
-    auto readWriterSettingLayout = new QVBoxLayout;
-    readWriterSettingLayout->addLayout(serialPortSettingsGridLayout);
-    readWriterSettingLayout->addLayout(tcpLayout);
+    auto tcpGroupBox = new QGroupBox(tr("TCP设置"));
+    tcpGroupBox->setLayout(tcpLayout);
 
     addLineReturnCheckBox = new QCheckBox(tr("自动换行"), this);
     displayReceiveDataAsHexCheckBox = new QCheckBox(tr("按十六进制显示"), this);
@@ -364,8 +370,9 @@ void MainWindow::initUi() {
     sendLayout->setSizeConstraint(QLayout::SetFixedSize);
 
     auto mainVBoxLayout1 = new QVBoxLayout;
-    mainVBoxLayout1->addLayout(readWriterButtonLayout);
-    mainVBoxLayout1->addLayout(readWriterSettingLayout);
+    mainVBoxLayout1->addWidget(readWriterButtonGroupBox);
+    mainVBoxLayout1->addWidget(serialPortSettingsGroupBox);
+    mainVBoxLayout1->addWidget(tcpGroupBox);
     mainVBoxLayout1->addWidget(openSerialButton);
     mainVBoxLayout1->addWidget(receiveSettingGroupBox);
     mainVBoxLayout1->addWidget(sendSettingGroupBox);
