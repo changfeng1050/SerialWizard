@@ -178,6 +178,8 @@ private:
 
     void showSendData(const QByteArray &data);
 
+    QStringList getSerialNameList();
+
     RunConfig *runConfig{nullptr};
 
     //状态栏

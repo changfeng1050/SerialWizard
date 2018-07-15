@@ -18,13 +18,19 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-    serialport.cpp \
     global.cpp \
     FrameInfoDialog.cpp \
-    CalculateCheckSumDialog.cpp
+    CalculateCheckSumDialog.cpp \
+    data/AbstractReadWriter.cpp \
+    data/BridgeReadWriter.cpp \
+    data/SerialReadWriter.cpp \
+    data/TcpReadWriter.cpp
 
 HEADERS  += mainwindow.h \
-    serialport.h \
     global.h \
     FrameInfoDialog.h \
-    CalculateCheckSumDialog.h
+    CalculateCheckSumDialog.h \
+    data/AbstractReadWriter.h \
+    data/BridgeReadWriter.h \
+    data/SerialReadWriter.h \
+    data/TcpReadWriter.h

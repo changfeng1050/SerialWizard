@@ -25,6 +25,7 @@
 #include <QRadioButton>
 #include <QButtonGroup>
 #include <data/BridgeReadWriter.h>
+#include <QtSerialPort/QSerialPortInfo>
 
 #include "MainWindow.h"
 #include "CalculateCheckSumDialog.h"
@@ -81,7 +82,7 @@ void MainWindow::initUi() {
 
     setWindowTitle(tr("串口调试工具"));
 
-    setMinimumSize(1024, 768);
+    setMinimumSize(1280, 800);
 
     serialRadioButton = new QRadioButton(tr("串口"), this);
     tcpRadioButton = new QRadioButton("TCP", this);
@@ -108,10 +109,7 @@ void MainWindow::initUi() {
     readWriterButtonGroupBox->setLayout(readWriterButtonLayout);
 
     auto serialPortNameLabel = new QLabel(tr("串口"), this);
-    QStringList serialPortNameList;
-    for (int i = 0; i < 40; ++i) {
-        serialPortNameList << QString("COM%1").arg(i + 1);
-    }
+    QStringList serialPortNameList = getSerialNameList();
 
     serialPortNameComboBox = new QComboBox(this);
     serialPortNameComboBox->addItems(serialPortNameList);
@@ -1330,6 +1328,16 @@ void MainWindow::showSendData(const QByteArray &data) {
         sendCount += data.count();
         emit writeBytesChanged(sendCount);
     }
+}
+
+QStringList MainWindow::getSerialNameList() {
+
+    auto serialPortInfoList = QSerialPortInfo::availablePorts();
+    QStringList l;
+    for (auto &s:serialPortInfoList){
+        l.append(s.portName());
+    }
+    return l;
 }
 
 
