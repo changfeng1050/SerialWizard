@@ -1,6 +1,8 @@
-# SerialWizard 串口调试助手
-
+SerialWizard 串口调试助手
+====
 SerialWizard是一个使用Qt & C++ 开发的跨平台串口调试工具
+
+![](https://github.com/changfeng1050/SerialWizard/raw/master/pic/screenshot_overview.png)
 
 ## Features
 
