@@ -25,7 +25,7 @@ foreach (plugin ${Qt5Network_PLUGINS})
 endforeach ()
 
 
-set(SOURCE_FILES main.cpp MainWindow.cpp MainWindow.h CalculateCheckSumDialog.cpp CalculateCheckSumDialog.h FrameInfoDialog.cpp FrameInfoDialog.h global.cpp global.h data/AbstractReadWriter.cpp data/AbstractReadWriter.h data/SerialReadWriter.cpp data/SerialReadWriter.h data/TcpReadWriter.cpp data/TcpReadWriter.h data/BridgeReadWriter.cpp data/BridgeReadWriter.h)
+set(SOURCE_FILES main.cpp MainWindow.cpp MainWindow.h CalculateCheckSumDialog.cpp CalculateCheckSumDialog.h FrameInfoDialog.cpp FrameInfoDialog.h global.cpp global.h data/AbstractReadWriter.cpp data/AbstractReadWriter.h data/SerialReadWriter.cpp data/SerialReadWriter.h data/TcpReadWriter.cpp data/TcpReadWriter.h data/BridgeReadWriter.cpp data/BridgeReadWriter.h serial/SerialController.cpp serial/SerialController.h serial/NormalSerialController.cpp serial/NormalSerialController.h serial/LineSerialController.cpp serial/LineSerialController.h serial/FixedBytesSerialController.cpp serial/FixedBytesSerialController.h serial/FrameSerialController.cpp serial/FrameSerialController.h)
 #add_executable(SerialWizard ${SOURCE_FILES})
 add_executable(SerialWizard WIN32 ${SOURCE_FILES})
 qt5_use_modules(SerialWizard Widgets Core SerialPort Network)

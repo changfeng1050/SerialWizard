@@ -29,6 +29,8 @@ class QRadioButton;
 
 class QButtonGroup;
 
+class SerialController;
+
 #include <QtWidgets/QMainWindow>
 #include "FrameInfoDialog.h"
 
@@ -53,6 +55,10 @@ public:
 
     ~MainWindow() override;
 
+    enum class SendType{
+       Normal, Line, Frame,FixedBytes
+    };
+
 
 public:
 
@@ -73,13 +79,7 @@ public slots:
 
     void closeReadWriter();
 
-    void sendOneFrameData();
-
-    void sendOneLineData();
-
-    void sendFixedCountData();
-
-    void sendAllData();
+    void sendNextData();
 
     void readData();
 
@@ -123,12 +123,11 @@ public slots:
 
     void clearTcpClient();
 
+    void updateSendType();
+
 
 private:
 
-    enum class SendType {
-        Normal, Frame, Line, FixBytes
-    };
 
     enum class AutoSendState {
         NotStart, Sending, Finish
@@ -150,17 +149,7 @@ private:
 
     void createMenu();
 
-    void upDateSendData(bool isHex, const QString &text);
-
-    QByteArray getNextFrameData();
-
-    QByteArray getNextLineData();
-
-    QByteArray getNextFrameData(QByteArray *data, int startIndex, FrameInfo *frameInfo);
-
-    QByteArray getNextFixedCountData(QByteArray *data, int startIndex, int count);
-
-    void sendStatusMessage(const QString &msg);
+    void updateSendData(bool isHex, const QString &text);
 
     void updateSendCount(qint64 count);
 
@@ -259,18 +248,19 @@ private:
     QLineEdit *byteCountLineEdit;
     QPushButton *sendAllButton;
 
-    SendType sendType{SendType::Normal};
-
     AutoSendState autoSendState{AutoSendState::NotStart};
 
     QTimer *autoSendTimer{nullptr};
-    QByteArray *mySendData{nullptr};
-    QStringList *mySendList{nullptr};
+
+
+    SerialController *serialController{nullptr};
 
     int currentSendCount{0};
     int totalSendCount{0};
 
-    bool loopSend{false};
+    bool _loopSend{false};
+
+    SendType _sendType{SendType ::Normal};
 };
 
 
