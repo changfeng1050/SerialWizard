@@ -193,23 +193,27 @@ void MainWindow::initUi() {
     tcpGroupBox->setLayout(tcpLayout);
 
     addLineReturnCheckBox = new QCheckBox(tr("自动换行"), this);
-    displayReceiveDataAsHexCheckBox = new QCheckBox(tr("按十六进制显示"), this);
-    addReceiveTimestampCheckBox = new QCheckBox(tr("添加接收时间戳"), this);
-    pauseReceiveCheckBox = new QCheckBox(tr("暂停接收数据"), this);
+    displayReceiveDataAsHexCheckBox = new QCheckBox(tr("十六进制显示"), this);
+    addReceiveTimestampCheckBox = new QCheckBox(tr("添加时间戳"), this);
+    pauseReceiveCheckBox = new QCheckBox(tr("暂停接收"), this);
     saveReceiveDataButton = new QPushButton(tr("保存数据"), this);
     clearReceiveDataButton = new QPushButton(tr("清除显示"), this);
 
-    auto receiveSettingLayout = new QVBoxLayout;
-    receiveSettingLayout->addWidget(addLineReturnCheckBox);
-    receiveSettingLayout->addWidget(displayReceiveDataAsHexCheckBox);
-    receiveSettingLayout->addWidget(addReceiveTimestampCheckBox);
-    receiveSettingLayout->addWidget(pauseReceiveCheckBox);
+    auto receiveSettingLayout = new QGridLayout;
+    receiveSettingLayout->addWidget(addLineReturnCheckBox,0,0);
+    receiveSettingLayout->addWidget(displayReceiveDataAsHexCheckBox,0,1);
+    receiveSettingLayout->addWidget(addReceiveTimestampCheckBox,1,0);
+    receiveSettingLayout->addWidget(pauseReceiveCheckBox,1,1);
 
-    auto receiveSettingHBoxLayout1 = new QHBoxLayout;
-    receiveSettingHBoxLayout1->addWidget(saveReceiveDataButton);
-    receiveSettingHBoxLayout1->addWidget(clearReceiveDataButton);
+//    auto receiveSettingHBoxLayout1 = new QHBoxLayout;
+//    receiveSettingHBoxLayout1->addWidget(saveReceiveDataButton);
+//    receiveSettingHBoxLayout1->addWidget(clearReceiveDataButton);
 
-    receiveSettingLayout->addLayout(receiveSettingHBoxLayout1);
+//    receiveSettingLayout->addLayout(receiveSettingHBoxLayout1);
+
+    receiveSettingLayout->addWidget(saveReceiveDataButton, 2, 0);
+    receiveSettingLayout->addWidget(clearReceiveDataButton, 2, 1);
+
 
     auto receiveSettingGroupBox = new QGroupBox(tr("接收设置"));
     receiveSettingGroupBox->setLayout(receiveSettingLayout);
@@ -222,9 +226,9 @@ void MainWindow::initUi() {
     receiveDataGroupBox->setLayout(receiveDataLayout);
     receiveDataGroupBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
-    sendHexCheckBox = new QCheckBox(tr("按十六进制发送"), this);
+    sendHexCheckBox = new QCheckBox(tr("十六进制发送"), this);
     displaySendDataCheckBox = new QCheckBox(tr("显示发送数据"), this);
-    displaySendDataAsHexCheckBox = new QCheckBox(tr("十六进制显示发送"), this);
+    displaySendDataAsHexCheckBox = new QCheckBox(tr("十六进制显示"), this);
 
 
     autoSendCheckBox = new QCheckBox(tr("自动发送"), this);
@@ -252,18 +256,18 @@ void MainWindow::initUi() {
 
     auto currentSendCountLabel = new QLabel(tr("计数"), this);
     currentSendCountLabel->setBuddy(currentSendCountLineEdit);
-    auto totalSendCountText = new QLabel(tr("总数"), this);
-    totalSendCountLabel = new QLabel(this);
-    totalSendCountText->setBuddy(totalSendCountLabel);
+    auto divideLabel = new QLabel(tr("/"),this);
+    totalSendCountLabel = new QLabel(tr("0"),this);
 
     auto loopLayout1 = new QHBoxLayout;
     loopLayout1->addWidget(loopSendCheckBox);
     loopLayout1->addWidget(resetLoopSendButton);
 
     auto sendCountLayout = new QHBoxLayout;
+    sendCountLayout->setAlignment(Qt::AlignLeft);
     sendCountLayout->addWidget(currentSendCountLabel);
     sendCountLayout->addWidget(currentSendCountLineEdit);
-    sendCountLayout->addWidget(totalSendCountText);
+    sendCountLayout->addWidget(divideLabel);
     sendCountLayout->addWidget(totalSendCountLabel);
 
     auto loopSendLayout = new QVBoxLayout;
@@ -274,15 +278,13 @@ void MainWindow::initUi() {
 
     saveSentDataButton = new QPushButton(tr("保存数据"), this);
     clearSentDataButton = new QPushButton(tr("清除显示"), this);
-    auto sendSettingsHLayout1 = new QHBoxLayout;
-    sendSettingsHLayout1->addWidget(saveSentDataButton);
-    sendSettingsHLayout1->addWidget(clearSentDataButton);;
 
-    auto sendSettingLayout = new QVBoxLayout;
-    sendSettingLayout->addWidget(sendHexCheckBox);
-    sendSettingLayout->addWidget(displaySendDataCheckBox);
-    sendSettingLayout->addWidget(displaySendDataAsHexCheckBox);
-    sendSettingLayout->addLayout(sendSettingsHLayout1);
+    auto sendSettingLayout = new QGridLayout;
+    sendSettingLayout->addWidget(sendHexCheckBox,0,0,1,2);
+    sendSettingLayout->addWidget(displaySendDataCheckBox,1,0);
+    sendSettingLayout->addWidget(displaySendDataAsHexCheckBox,1,1);
+    sendSettingLayout->addWidget(saveSentDataButton,2,0);
+    sendSettingLayout->addWidget(clearSentDataButton,2,1);
 
     auto sendSettingGroupBox = new QGroupBox(tr("发送设置"));
     sendSettingGroupBox->setLayout(sendSettingLayout);
@@ -348,15 +350,12 @@ void MainWindow::initUi() {
     sendTextEdit->setMinimumHeight(100);
     sendTextEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
 
-    transferHexButton = new QPushButton(tr("转换为十六进制"), this);
-    transferAsciiButton = new QPushButton(tr("转换为文本"), this);
 
-    sendButton = new QPushButton(tr("发送"));
+    sendAllButton = new QPushButton(tr("全部发送"));
 
     auto sendButtonLayout = new QVBoxLayout;
-    sendButtonLayout->addWidget(transferHexButton);
-    sendButtonLayout->addWidget(transferAsciiButton);
-    sendButtonLayout->addWidget(sendButton);
+    sendButtonLayout->setAlignment(Qt::AlignBottom);
+    sendButtonLayout->addWidget(sendAllButton);
 
     sendButtonLayout->setSizeConstraint(QLayout::SetFixedSize);
 
@@ -667,7 +666,7 @@ void MainWindow::createConnect() {
         }
     });
 
-    connect(sendButton, &QPushButton::clicked, [this](bool value) {
+    connect(sendAllButton, &QPushButton::clicked, [this](bool value) {
                 if (!isReadWriterConnected()) {
                     handlerSerialNotOpen();
                     return;
@@ -682,29 +681,29 @@ void MainWindow::createConnect() {
                     startAutoSendTimerIfNeed();
                 }
                 if (autoSendState == AutoSendState::Sending) {
-                    sendButton->setText("停止");
+                    sendAllButton->setText("停止");
                 } else {
                     resetSendButtonText();
                 }
             }
 
     );
+//    connect(transferHexButton, &QPushButton::clicked,
+//            [this] {
+//                auto text = sendTextEdit->toPlainText();
+//                auto result = QString(dataToHex(text.toLocal8Bit()));
+//                sendTextEdit->
+//                        setText(result);
+//            });
+//    connect(transferAsciiButton, &QPushButton::clicked,
+//            [this] {
+//                auto text = sendTextEdit->toPlainText();
+//                QString result = QString::fromLocal8Bit(dataFromHex(text));
+//                sendTextEdit->
+//                        setText(result);
+//            });
 
-    connect(transferHexButton, &QPushButton::clicked,
-            [this] {
-                auto text = sendTextEdit->toPlainText();
-                auto result = QString(dataToHex(text.toLocal8Bit()));
-                sendTextEdit->
-                        setText(result);
-            });
-    connect(transferAsciiButton, &QPushButton::clicked,
-            [this] {
-                auto text = sendTextEdit->toPlainText();
-                QString result = QString::fromLocal8Bit(dataFromHex(text));
-                sendTextEdit->
-                        setText(result);
-            });
-
+//
     connect(autoSendTimer, &QTimer::timeout,
             [this] {
                 switch (sendType) {
@@ -1284,7 +1283,7 @@ void MainWindow::resetSendButtonText() {
     sendFrameButton->setText(tr("发送下一帧"));
     sendLineButton->setText(tr("发送下一行"));
     sendFixBytesButton->setText("发送下一帧");
-    sendButton->setText("发送");
+    sendAllButton->setText("全部发送");
 }
 
 void MainWindow::updateTotalSendCount(qint64 count) {

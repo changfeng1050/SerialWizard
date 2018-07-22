@@ -257,9 +257,7 @@ private:
     QPushButton *sendLineButton;
     QPushButton *sendFixBytesButton;
     QLineEdit *byteCountLineEdit;
-    QPushButton *sendButton;
-    QPushButton *transferHexButton;
-    QPushButton *transferAsciiButton;
+    QPushButton *sendAllButton;
 
     SendType sendType{SendType::Normal};
 
