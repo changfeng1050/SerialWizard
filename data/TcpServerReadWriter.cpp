@@ -2,15 +2,15 @@
 // Created by chang on 2018-03-07.
 //
 
-#include "TcpReadWriter.h"
+#include "TcpServerReadWriter.h"
 #include <QTcpSocket>
 #include <QTcpServer>
 
-TcpReadWriter::TcpReadWriter(QObject *parent) : AbstractReadWriter(parent) {
+TcpServerReadWriter::TcpServerReadWriter(QObject *parent) : AbstractReadWriter(parent) {
 
 }
 
-bool TcpReadWriter::open() {
+bool TcpServerReadWriter::open() {
     close();
     _tcpServer = new QTcpServer(this);
     connect(_tcpServer, &QTcpServer::newConnection, this, [=] {
@@ -20,7 +20,7 @@ bool TcpReadWriter::open() {
             _tcpSocket = nullptr;
         }
         _tcpSocket = _tcpServer->nextPendingConnection();
-        connect(_tcpSocket, &QTcpSocket::readyRead, this, &TcpReadWriter::readyRead);
+        connect(_tcpSocket, &QTcpSocket::readyRead, this, &TcpServerReadWriter::readyRead);
         connect(_tcpSocket, &QTcpSocket::disconnected, [this] {
             emit connectionClosed();
         });
@@ -41,11 +41,11 @@ bool TcpReadWriter::open() {
     return false;
 }
 
-bool TcpReadWriter::isOpen() {
+bool TcpServerReadWriter::isOpen() {
     return _tcpServer != nullptr && _tcpServer->isListening();
 }
 
-void TcpReadWriter::close() {
+void TcpServerReadWriter::close() {
     if (_tcpServer != nullptr) {
         if (_tcpServer->isListening()) {
             _tcpServer->close();
@@ -64,34 +64,34 @@ void TcpReadWriter::close() {
     }
 }
 
-QByteArray TcpReadWriter::readAll() {
+QByteArray TcpServerReadWriter::readAll() {
     if (_tcpSocket != nullptr && _tcpSocket->isOpen()) {
         return _tcpSocket->readAll();
     }
-    qDebug() << "TcpReadWriter readAll() _tcpSocket == nullptr or not open";
+    qDebug() << "TcpServerReadWriter readAll() _tcpSocket == nullptr or not open";
     return QByteArray();
 }
 
-qint64 TcpReadWriter::write(const QByteArray &byteArray) const {
+qint64 TcpServerReadWriter::write(const QByteArray &byteArray) const {
     if (_tcpSocket != nullptr && _tcpSocket->isOpen()) {
         return _tcpSocket->write(byteArray);
     }
-    qDebug() << "TcpReadWriter write() _tcpSocket == nullptr or not open";
+    qDebug() << "TcpServerReadWriter write() _tcpSocket == nullptr or not open";
     return 0;
 }
 
-void TcpReadWriter::setAddress(const QString &address) {
+void TcpServerReadWriter::setAddress(const QString &address) {
     _address = address;
 }
 
-void TcpReadWriter::setPort(int port) {
+void TcpServerReadWriter::setPort(int port) {
     _port = port;
 }
 
-QString TcpReadWriter::settingsText() const {
+QString TcpServerReadWriter::settingsText() const {
     return QString("%1 %2").arg(_address).arg(_port);
 }
 
-bool TcpReadWriter::isConnected() {
+bool TcpServerReadWriter::isConnected() {
     return isOpen() && _tcpSocket != nullptr && _tcpSocket->isOpen();
 }

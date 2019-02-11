@@ -21,7 +21,8 @@
 #include <QStatusBar>
 #include <QSplitter>
 #include <data/SerialReadWriter.h>
-#include <data/TcpReadWriter.h>
+#include <data/TcpServerReadWriter.h>
+#include <data/TcpClientReadWriter.h>
 #include <QRadioButton>
 #include <QButtonGroup>
 #include <data/BridgeReadWriter.h>
@@ -68,24 +69,28 @@ void MainWindow::initUi() {
     setMinimumSize(1280, 800);
 
     serialRadioButton = new QRadioButton(tr("串口"), this);
-    tcpRadioButton = new QRadioButton("TCP", this);
-    brigdeRadioButton = new QRadioButton(tr("桥接"), this);
+    tcpServerRadioButton = new QRadioButton("TCP(服务器)", this);
+    tcpClientRadioButton = new QRadioButton("TCP(客户端)", this);
+    bridgeRadioButton = new QRadioButton(tr("桥接"), this);
 
     serialRadioButton->setChecked(true);
 
     serialRadioButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-    tcpRadioButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-    brigdeRadioButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    tcpServerRadioButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    tcpClientRadioButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    bridgeRadioButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 
     readWriterButtonGroup = new QButtonGroup;
     readWriterButtonGroup->addButton(serialRadioButton);
-    readWriterButtonGroup->addButton(tcpRadioButton);
-    readWriterButtonGroup->addButton(brigdeRadioButton);
+    readWriterButtonGroup->addButton(tcpServerRadioButton);
+    readWriterButtonGroup->addButton(tcpClientRadioButton);
+    readWriterButtonGroup->addButton(bridgeRadioButton);
 
     auto readWriterButtonLayout = new QHBoxLayout;
     readWriterButtonLayout->addWidget(serialRadioButton);
-    readWriterButtonLayout->addWidget(tcpRadioButton);
-    readWriterButtonLayout->addWidget(brigdeRadioButton);
+    readWriterButtonLayout->addWidget(tcpServerRadioButton);
+    readWriterButtonLayout->addWidget(tcpClientRadioButton);
+    readWriterButtonLayout->addWidget(bridgeRadioButton);
 
 
     auto readWriterButtonGroupBox = new QGroupBox(tr("打开模式"));
@@ -183,10 +188,10 @@ void MainWindow::initUi() {
     clearReceiveDataButton = new QPushButton(tr("清除显示"), this);
 
     auto receiveSettingLayout = new QGridLayout;
-    receiveSettingLayout->addWidget(addLineReturnCheckBox,0,0);
-    receiveSettingLayout->addWidget(displayReceiveDataAsHexCheckBox,0,1);
-    receiveSettingLayout->addWidget(addReceiveTimestampCheckBox,1,0);
-    receiveSettingLayout->addWidget(pauseReceiveCheckBox,1,1);
+    receiveSettingLayout->addWidget(addLineReturnCheckBox, 0, 0);
+    receiveSettingLayout->addWidget(displayReceiveDataAsHexCheckBox, 0, 1);
+    receiveSettingLayout->addWidget(addReceiveTimestampCheckBox, 1, 0);
+    receiveSettingLayout->addWidget(pauseReceiveCheckBox, 1, 1);
 
     receiveSettingLayout->addWidget(saveReceiveDataButton, 2, 0);
     receiveSettingLayout->addWidget(clearReceiveDataButton, 2, 1);
@@ -232,8 +237,8 @@ void MainWindow::initUi() {
 
     auto currentSendCountLabel = new QLabel(tr("计数"), this);
     currentSendCountLabel->setBuddy(currentSendCountLineEdit);
-    auto divideLabel = new QLabel(tr("/"),this);
-    totalSendCountLabel = new QLabel(tr("0"),this);
+    auto divideLabel = new QLabel(tr("/"), this);
+    totalSendCountLabel = new QLabel(tr("0"), this);
 
     auto loopLayout1 = new QHBoxLayout;
     loopLayout1->addWidget(loopSendCheckBox);
@@ -256,11 +261,11 @@ void MainWindow::initUi() {
     clearSentDataButton = new QPushButton(tr("清除显示"), this);
 
     auto sendSettingLayout = new QGridLayout;
-    sendSettingLayout->addWidget(sendHexCheckBox,0,0,1,2);
-    sendSettingLayout->addWidget(displaySendDataCheckBox,1,0);
-    sendSettingLayout->addWidget(displaySendDataAsHexCheckBox,1,1);
-    sendSettingLayout->addWidget(saveSentDataButton,2,0);
-    sendSettingLayout->addWidget(clearSentDataButton,2,1);
+    sendSettingLayout->addWidget(sendHexCheckBox, 0, 0, 1, 2);
+    sendSettingLayout->addWidget(displaySendDataCheckBox, 1, 0);
+    sendSettingLayout->addWidget(displaySendDataAsHexCheckBox, 1, 1);
+    sendSettingLayout->addWidget(saveSentDataButton, 2, 0);
+    sendSettingLayout->addWidget(clearSentDataButton, 2, 1);
 
     auto sendSettingGroupBox = new QGroupBox(tr("发送设置"));
     sendSettingGroupBox->setLayout(sendSettingLayout);
@@ -424,7 +429,7 @@ void MainWindow::openReadWriter() {
             return;
         }
         _readWriter = readWriter;
-    } else if (readWriterButtonGroup->checkedButton() == tcpRadioButton) {
+    } else if (readWriterButtonGroup->checkedButton() == tcpServerRadioButton) {
         auto address = tcpAddressLineEdit->text();
         bool ok;
         auto port = tcpPortLineEdit->text().toInt(&ok);
@@ -433,7 +438,7 @@ void MainWindow::openReadWriter() {
             return;
         }
 
-        auto readWriter = new TcpReadWriter(this);
+        auto readWriter = new TcpServerReadWriter(this);
         readWriter->
                 setAddress(address);
         readWriter->
@@ -444,8 +449,28 @@ void MainWindow::openReadWriter() {
             showWarning("", tr("建立服务器失败"));
             return;
         }
-        connect(readWriter, &TcpReadWriter::currentSocketChanged, this, &MainWindow::updateTcpClient);
-        connect(readWriter, &TcpReadWriter::connectionClosed, this, &MainWindow::clearTcpClient);
+        connect(readWriter, &TcpServerReadWriter::currentSocketChanged, this, &MainWindow::updateTcpClient);
+        connect(readWriter, &TcpServerReadWriter::connectionClosed, this, &MainWindow::clearTcpClient);
+        _readWriter = readWriter;
+    } else if (readWriterButtonGroup->checkedButton() == tcpClientRadioButton) {
+        auto address = tcpAddressLineEdit->text();
+        bool ok;
+        auto port = tcpPortLineEdit->text().toInt(&ok);
+        if (!ok) {
+            showMessage("", tr("端口格式不正确"));
+            return;
+        }
+
+        auto readWriter = new TcpClientReadWriter(this);
+        readWriter->setAddress(address);
+        readWriter->setPort(port);
+
+        qDebug() << address << port;
+        result = readWriter->open();
+        if (!result) {
+            showError("", tr("连接服务器失败"));
+            return;
+        }
         _readWriter = readWriter;
     } else {
         auto settings = new SerialSettings();
@@ -488,6 +513,8 @@ void MainWindow::openReadWriter() {
     }
     connect(_readWriter, &AbstractReadWriter::readyRead,
             this, &MainWindow::readData);
+
+
     emit serialStateChanged(result);
 }
 
@@ -663,7 +690,7 @@ void MainWindow::createConnect() {
 
     connect(autoSendTimer, &QTimer::timeout,
             [this] {
-        sendNextData();
+                sendNextData();
             });
 }
 
@@ -887,7 +914,7 @@ void MainWindow::readSettings() {
 
     _loopSend = loopSend;
 
-    serialController =new NormalSerialController();
+    serialController = new NormalSerialController();
     serialController->setIsHex(sendAsHex);
     serialController->setAutoSend(autoSend);
     serialController->setLoopSend(loopSend);
@@ -1158,7 +1185,7 @@ QStringList MainWindow::getSerialNameList() {
 
     auto serialPortInfoList = QSerialPortInfo::availablePorts();
     QStringList l;
-    for (auto &s:serialPortInfoList){
+    for (auto &s:serialPortInfoList) {
         l.append(s.portName());
     }
     return l;
@@ -1170,7 +1197,7 @@ void MainWindow::updateSendType() {
         return;
     }
 
-    SerialController * newController= nullptr;
+    SerialController *newController = nullptr;
 
     if (_sendType == SendType::Normal) {
         newController = new NormalSerialController(serialController);
@@ -1178,7 +1205,7 @@ void MainWindow::updateSendType() {
         newController = new LineSerialController(serialController);
     } else if (_sendType == SendType::Frame) {
         auto controller = new FrameSerialController(serialController);
-        if (frameInfo!= nullptr) {
+        if (frameInfo != nullptr) {
             controller->setFrameInfo(*frameInfo);
         }
         newController = controller;

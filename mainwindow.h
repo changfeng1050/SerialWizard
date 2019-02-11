@@ -55,8 +55,8 @@ public:
 
     ~MainWindow() override;
 
-    enum class SendType{
-       Normal, Line, Frame,FixedBytes
+    enum class SendType {
+        Normal, Line, Frame, FixedBytes
     };
 
 
@@ -192,9 +192,9 @@ private:
     qint64 receiveCount{0};
 
     QRadioButton *serialRadioButton;
-    QRadioButton *tcpRadioButton;
-    QRadioButton *brigdeRadioButton;
-
+    QRadioButton *tcpServerRadioButton;
+    QRadioButton *tcpClientRadioButton;
+    QRadioButton *bridgeRadioButton;
 
     QButtonGroup *readWriterButtonGroup;
 
@@ -260,7 +260,8 @@ private:
 
     bool _loopSend{false};
 
-    SendType _sendType{SendType ::Normal};
+    SendType _sendType{SendType::Normal};
+
 };
 
 

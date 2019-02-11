@@ -4,11 +4,11 @@
 
 #include "BridgeReadWriter.h"
 
-#include "TcpReadWriter.h"
+#include "TcpServerReadWriter.h"
 
 BridgeReadWriter::BridgeReadWriter(QObject *parent) : AbstractReadWriter(parent) {
     _serialReaderWriter = new SerialReadWriter(parent);
-    _tcpReaderWriter = new TcpReadWriter(parent);
+    _tcpReaderWriter = new TcpServerReadWriter(parent);
 
 
     connect(_serialReaderWriter, &SerialReadWriter::readyRead, [this] {
@@ -17,14 +17,14 @@ BridgeReadWriter::BridgeReadWriter(QObject *parent) : AbstractReadWriter(parent)
         emit serialDataRead(dataRead);
     });
 
-    connect(_tcpReaderWriter, &TcpReadWriter::readyRead, [this] {
+    connect(_tcpReaderWriter, &TcpServerReadWriter::readyRead, [this] {
         auto dataRead = _tcpReaderWriter->readAll();
         _serialReaderWriter->write(dataRead);
         emit tcpDataRead(dataRead);
     });
 
-    connect(_tcpReaderWriter, &TcpReadWriter::currentSocketChanged, this, &BridgeReadWriter::currentSocketChanged);
-    connect(_tcpReaderWriter, &TcpReadWriter::connectionClosed, this, &BridgeReadWriter::connectionClosed);
+    connect(_tcpReaderWriter, &TcpServerReadWriter::currentSocketChanged, this, &BridgeReadWriter::currentSocketChanged);
+    connect(_tcpReaderWriter, &TcpServerReadWriter::connectionClosed, this, &BridgeReadWriter::connectionClosed);
 }
 
 void BridgeReadWriter::setSettings(SerialSettings serialSettings, const QString &tcpAddress, qint16 port) {

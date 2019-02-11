@@ -7,7 +7,7 @@
 
 class SerialReadWriter;
 
-class TcpReadWriter;
+class TcpServerReadWriter;
 
 #include "AbstractReadWriter.h"
 #include "SerialReadWriter.h"
@@ -45,7 +45,7 @@ signals:
 
 private:
     SerialReadWriter *_serialReaderWriter;
-    TcpReadWriter *_tcpReaderWriter;
+    TcpServerReadWriter *_tcpReaderWriter;
 
 };
 

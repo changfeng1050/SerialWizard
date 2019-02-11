@@ -1,21 +1,18 @@
 //
-// Created by chang on 2018-03-07.
+// Created by chang on 2019-02-09.
 //
 
-#ifndef SERIALWIZARD_TCPREADWRITER_H
-#define SERIALWIZARD_TCPREADWRITER_H
+#ifndef SERIALWIZARD_TCPCLIENTREADWRITER_H
+#define SERIALWIZARD_TCPCLIENTREADWRITER_H
 
+#include <QTcpSocket>
 
 #include "AbstractReadWriter.h"
 
-class QTcpServer;
-
-class QTcpSocket;
-
-class TcpReadWriter : public AbstractReadWriter {
+class TcpClientReadWriter : public AbstractReadWriter {
 Q_OBJECT
 public:
-    explicit TcpReadWriter(QObject *parent = nullptr);
+    explicit TcpClientReadWriter(QObject *parent = nullptr);
 
     bool open() override;
 
@@ -25,8 +22,6 @@ public:
 
     QString settingsText() const override;
 
-    void close() override;
-
     void setAddress(const QString &address);
 
     void setPort(int port);
@@ -35,19 +30,13 @@ public:
 
     qint64 write(const QByteArray &byteArray) const override;
 
-signals:
-
-    void currentSocketChanged(const QString &address, qint16 port);
-
-    void connectionClosed();
-
-
+    void close() override;
 private:
-    QTcpServer *_tcpServer{nullptr};
     QTcpSocket *_tcpSocket{nullptr};
     QString _address{"192.168.1.100"};
     int _port{9000};
+
 };
 
 
-#endif //SERIALWIZARD_TCPREADWRITER_H
+#endif //SERIALWIZARD_TCPCLIENTREADWRITER_H

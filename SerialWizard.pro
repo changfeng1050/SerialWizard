@@ -24,7 +24,7 @@ SOURCES += main.cpp\
     data/AbstractReadWriter.cpp \
     data/BridgeReadWriter.cpp \
     data/SerialReadWriter.cpp \
-    data/TcpReadWriter.cpp
+    data/TcpServerReadWriter.cpp
 
 HEADERS  += mainwindow.h \
     global.h \
@@ -33,4 +33,4 @@ HEADERS  += mainwindow.h \
     data/AbstractReadWriter.h \
     data/BridgeReadWriter.h \
     data/SerialReadWriter.h \
-    data/TcpReadWriter.h
+    data/TcpServerReadWriter.h

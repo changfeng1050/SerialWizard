@@ -4,6 +4,8 @@
 
 #include "AbstractReadWriter.h"
 
+#include <QTimer>
+
 AbstractReadWriter::AbstractReadWriter(QObject *parent) : QObject(parent) {
 
 }
