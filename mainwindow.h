@@ -99,6 +99,8 @@ public slots:
 
     void openDataValidator();
 
+    void openConvertDataDialog();
+
     void openFrameInfoSettingDialog();
 
     void clearReceivedData();
@@ -185,6 +187,7 @@ private:
     QAction *saveAct;
     QAction *exitAct;
     QAction *validateDataAct;
+    QAction *convertDataAct;
 
     AbstractReadWriter *_readWriter{nullptr};
 

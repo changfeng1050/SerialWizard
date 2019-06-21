@@ -9,7 +9,7 @@
 #include <QtCore/QObject>
 #include <mainwindow.h>
 
-class SerialController : public  QObject{
+class SerialController : public QObject {
 Q_OBJECT
 public:
 
@@ -23,25 +23,31 @@ public:
 
     void setIsHex(bool isHex);
 
-     virtual QByteArray getNextFrame() =0;
+    virtual QByteArray getNextFrame() = 0;
 
-     virtual int getTotalCount()=0;
+    virtual int getTotalCount() = 0;
 
-     void setAutoSend(bool autoSend);
+    int getCurrentCount();
 
-     void setLoopSend(bool loopSend);
+    void setAutoSend(bool autoSend);
 
-     void setAutoSendInterval(int interval);
+    void setLoopSend(bool loopSend);
+
+    void setAutoSendInterval(int interval);
 
     bool isHex();
+
     bool autoSend();
+
     bool loopSend();
+
     int autoSendInterval();
 
     QByteArray data();
+
     QStringList dataList();
 
-    virtual MainWindow::SendType sendType()=0;
+    virtual MainWindow::SendType sendType() = 0;
 
 protected:
     bool _isHex{false};

@@ -37,6 +37,7 @@
 #include "serial/FixedBytesSerialController.h"
 #include "serial/LineSerialController.h"
 #include "serial/FrameSerialController.h"
+#include "ConvertDataDialog.h"
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), receiveCount(0), sendCount(0) {
 
@@ -86,11 +87,11 @@ void MainWindow::initUi() {
     readWriterButtonGroup->addButton(tcpClientRadioButton);
     readWriterButtonGroup->addButton(bridgeRadioButton);
 
-    auto readWriterButtonLayout = new QHBoxLayout;
-    readWriterButtonLayout->addWidget(serialRadioButton);
-    readWriterButtonLayout->addWidget(tcpServerRadioButton);
-    readWriterButtonLayout->addWidget(tcpClientRadioButton);
-    readWriterButtonLayout->addWidget(bridgeRadioButton);
+    auto readWriterButtonLayout = new QGridLayout;
+    readWriterButtonLayout->addWidget(serialRadioButton, 0, 0);
+    readWriterButtonLayout->addWidget(bridgeRadioButton, 0, 1);
+    readWriterButtonLayout->addWidget(tcpServerRadioButton, 1, 0);
+    readWriterButtonLayout->addWidget(tcpClientRadioButton, 1, 1);
 
 
     auto readWriterButtonGroupBox = new QGroupBox(tr("打开模式"));
@@ -219,13 +220,10 @@ void MainWindow::initUi() {
     sendIntervalLineEdit->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Maximum);
     sendIntervalLabel->setBuddy(sendIntervalLineEdit);
 
-    auto sendIntervalLayout = new QHBoxLayout;
-    sendIntervalLayout->addWidget(sendIntervalLabel);
-    sendIntervalLayout->addWidget(sendIntervalLineEdit);
-
-    auto autoSendLayout = new QVBoxLayout;
+    auto autoSendLayout = new QHBoxLayout;
     autoSendLayout->addWidget(autoSendCheckBox);
-    autoSendLayout->addLayout(sendIntervalLayout);
+    autoSendLayout->addWidget(sendIntervalLabel);
+    autoSendLayout->addWidget(sendIntervalLineEdit);
     auto autoSendGroupBox = new QGroupBox("自动发送设置");
     autoSendGroupBox->setLayout(autoSendLayout);
 
@@ -348,6 +346,7 @@ void MainWindow::initUi() {
     sendLayout->setSizeConstraint(QLayout::SetFixedSize);
 
     auto mainVBoxLayout1 = new QVBoxLayout;
+    mainVBoxLayout1->setSizeConstraint(QLayout::SetFixedSize);
     mainVBoxLayout1->addWidget(readWriterButtonGroupBox);
     mainVBoxLayout1->addWidget(serialPortSettingsGroupBox);
     mainVBoxLayout1->addWidget(tcpGroupBox);
@@ -714,10 +713,14 @@ void MainWindow::createActions() {
     connect(saveAct, &QAction::triggered, this, &MainWindow::save);
 
     validateDataAct = new QAction(tr("计算校验(&C)"), this);
-    validateDataAct->setShortcut(tr("Ctr+C"));
+    validateDataAct->setShortcut(tr("Ctrl+C"));
     validateDataAct->setStatusTip(tr("计算数据校验值"));
     connect(validateDataAct, &QAction::triggered, this, &MainWindow::openDataValidator);
 
+    convertDataAct = new QAction(tr("数据转换(&T)"));
+    convertDataAct->setShortcut(tr("Ctrl+T"));
+    convertDataAct->setStatusTip(tr("数据转换"));
+    connect(convertDataAct, &QAction::triggered, this, &MainWindow::openConvertDataDialog);
 }
 
 void MainWindow::createMenu() {
@@ -727,6 +730,7 @@ void MainWindow::createMenu() {
 
     toolMenu = menuBar()->addMenu(tr("工具(&T)"));
     toolMenu->addAction(validateDataAct);
+    toolMenu->addAction(convertDataAct);
 
 
 }
@@ -756,6 +760,11 @@ void MainWindow::tool() {
 
 void MainWindow::openDataValidator() {
     CalculateCheckSumDialog dialog(this);
+    dialog.exec();
+}
+
+void MainWindow::openConvertDataDialog() {
+    ConvertDataDialog dialog(this);
     dialog.exec();
 }
 
@@ -823,8 +832,11 @@ void MainWindow::sendNextData() {
         return;
     }
 
+
     if (isReadWriterConnected()) {
         writeData(data);
+        currentSendCount = serialController->getCurrentCount();
+        emit currentWriteCountChanged(currentSendCount);
     } else {
         handlerSerialNotOpen();
     }
@@ -1094,7 +1106,9 @@ qint64 MainWindow::writeData(const QByteArray &data) {
         displaySentData(data);
         sendCount += count;
         emit writeBytesChanged(sendCount);
+        return count;
     }
+    return 0;
 }
 
 void MainWindow::startAutoSendTimerIfNeed() {

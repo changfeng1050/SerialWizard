@@ -24,7 +24,14 @@ SOURCES += main.cpp\
     data/AbstractReadWriter.cpp \
     data/BridgeReadWriter.cpp \
     data/SerialReadWriter.cpp \
-    data/TcpServerReadWriter.cpp
+    data/TcpServerReadWriter.cpp \
+    ConvertDataDialog.cpp \
+    serial/FixedBytesSerialController.cpp \
+    serial/FrameSerialController.cpp \
+    serial/LineSerialController.cpp \
+    serial/NormalSerialController.cpp \
+    serial/SerialController.cpp \
+    data/TcpClientReadWriter.cpp
 
 HEADERS  += mainwindow.h \
     global.h \
@@ -33,4 +40,11 @@ HEADERS  += mainwindow.h \
     data/AbstractReadWriter.h \
     data/BridgeReadWriter.h \
     data/SerialReadWriter.h \
-    data/TcpServerReadWriter.h
+    data/TcpServerReadWriter.h \
+    ConvertDataDialog.h \
+    serial/FixedBytesSerialController.h \
+    serial/FrameSerialController.h \
+    serial/LineSerialController.h \
+    serial/NormalSerialController.h \
+    serial/SerialController.h \
+    data/TcpClientReadWriter.h

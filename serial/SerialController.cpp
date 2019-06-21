@@ -48,6 +48,10 @@ void SerialController::setIsHex(bool isHex) {
     _isHex = isHex;
 }
 
+int SerialController::getCurrentCount() {
+    return _currentCount;
+}
+
 void SerialController::setAutoSend(bool autoSend) {
     _isAutoSend = autoSend;
 }

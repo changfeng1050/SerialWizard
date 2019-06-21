@@ -10,18 +10,38 @@
 #include <QtNetwork/QHostInfo>
 #include "global.h"
 
-QString utf82Gbk(const QString &inStr) {
-    QTextCodec *gbk = QTextCodec::codecForName("GB18030");
-    QTextCodec *utf8 = QTextCodec::codecForName("UTF-8");
+QTextCodec *gbk = QTextCodec::codecForName("GB18030");
+QTextCodec *utf8 = QTextCodec::codecForName("UTF-8");
 
-    gbk->fromUnicode(utf8->toUnicode(inStr.toLatin1()));
+QString utf82Gbk(const QString &inStr) {
+//    QTextCodec *utf8 = QTextCodec::codecForName("UTF-8");
+
+//    gbk->fromUnicode(utf8->toUnicode(inStr.toLatin1()));
 
     return QString(gbk->fromUnicode(inStr));
 
 //    QString utf2gbk = gbk->toUnicode(inStr.toLocal8Bit());
 //    return utf2gbk;
 }
+//
+//QString gbk2Utf8(const QString &inStr) {
+//    QTextCodec *gbk = QTextCodec::codecForName("GB18030");
+//    QTextCodec *utf8 = QTextCodec::codecForName("UTF-8");
+//
+//    gbk->fromUnicode(utf8->toUnicode(inStr.toLatin1()));
+//
+//    return QString(gbk->fromUnicode(inStr));
+//}
 
+QString fromUtf8(const QByteArray &data) {
+    qDebug() << "fromUtf8" << data.toHex();
+    return utf8->toUnicode(data);
+}
+
+QString fromGbk(const QByteArray &data) {
+    qDebug() << "fromGbk" << data.toHex();
+    return gbk->toUnicode(data);
+}
 
 bool okToContinue(const QString &title, const QString &text, QWidget *parent) {
     return QMessageBox::Yes == QMessageBox::warning(parent, title, text, QMessageBox::Yes | QMessageBox::No);
