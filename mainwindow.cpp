@@ -230,6 +230,7 @@ void MainWindow::initUi() {
     loopSendCheckBox = new QCheckBox(tr("循环发送"), this);
     resetLoopSendButton = new QPushButton(tr("重置计数"), this);
     currentSendCountLineEdit = new QLineEdit(this);
+    currentSendCountLineEdit->setText("0");
     currentSendCountLineEdit->setMaximumWidth(50);
     currentSendCountLineEdit->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Minimum);
 
@@ -384,7 +385,7 @@ void MainWindow::createStatusBar() {
     statusBarWriteBytesLabel->setMinimumWidth(100);
     statusBarWriteBytesLabel->setText("0");
 
-    statusBarResetCountButton = new QPushButton(tr("重置"), this);
+    statusBarResetCountButton = new QPushButton(tr("重置计数"), this);
 
     statusBar()->addPermanentWidget(receiveByteCountLabel);
     statusBar()->addPermanentWidget(statusBarReadBytesLabel);
@@ -407,10 +408,13 @@ void MainWindow::openReadWriter() {
         _readWriter->close();
         delete _readWriter;
         _readWriter = nullptr;
+        emit serialStateChanged(false);
     }
+
     bool result;
 
     if (readWriterButtonGroup->checkedButton() == serialRadioButton) {
+        _serialType = SerialType::Normal;
         auto settings = new SerialSettings();
         settings->name = serialPortNameComboBox->currentText();
         settings->baudRate = serialPortBaudRateComboBox->currentText().toInt();
@@ -428,7 +432,9 @@ void MainWindow::openReadWriter() {
             return;
         }
         _readWriter = readWriter;
+        _serialType = SerialType::Normal;
     } else if (readWriterButtonGroup->checkedButton() == tcpServerRadioButton) {
+        _serialType = SerialType::TcpServer;
         auto address = tcpAddressLineEdit->text();
         bool ok;
         auto port = tcpPortLineEdit->text().toInt(&ok);
@@ -452,6 +458,7 @@ void MainWindow::openReadWriter() {
         connect(readWriter, &TcpServerReadWriter::connectionClosed, this, &MainWindow::clearTcpClient);
         _readWriter = readWriter;
     } else if (readWriterButtonGroup->checkedButton() == tcpClientRadioButton) {
+        _serialType = SerialType::TcpClient;
         auto address = tcpAddressLineEdit->text();
         bool ok;
         auto port = tcpPortLineEdit->text().toInt(&ok);
@@ -472,6 +479,7 @@ void MainWindow::openReadWriter() {
         }
         _readWriter = readWriter;
     } else {
+        _serialType = SerialType::Bridge;
         auto settings = new SerialSettings();
         settings->name = serialPortNameComboBox->currentText();
         settings->baudRate = serialPortBaudRateComboBox->currentText().toInt();
@@ -529,6 +537,30 @@ void MainWindow::closeReadWriter() {
 
 void MainWindow::createConnect() {
 
+    connect(readWriterButtonGroup, QOverload<QAbstractButton *, bool>::of(&QButtonGroup::buttonToggled),
+            [=](QAbstractButton *button, bool checked) {
+
+                if (checked && isReadWriterOpen()) {
+                    SerialType serialType;
+                    if (button == tcpServerRadioButton) {
+                        serialType = SerialType::TcpServer;
+                    } else if (button == tcpClientRadioButton) {
+                        serialType = SerialType::TcpClient;
+
+                    } else if (button == bridgeRadioButton) {
+                        serialType = SerialType::Bridge;
+                    } else {
+                        serialType = SerialType::Normal;
+                    }
+
+                    if (serialType != _serialType) {
+                        if (showWarning("", tr("串口配置已经改变，是否重新打开串口？"))) {
+                            openReadWriter();
+                        }
+                    }
+                }
+            });
+
     connect(this, &MainWindow::serialStateChanged, [this](bool isOpen) {
         setOpenButtonText(isOpen);
         QString stateText;
@@ -555,6 +587,7 @@ void MainWindow::createConnect() {
 
     connect(saveReceiveDataButton, &QPushButton::clicked, this, &MainWindow::saveReceivedData);
     connect(clearReceiveDataButton, &QPushButton::clicked, this, &MainWindow::clearReceivedData);
+
 
     connect(saveSentDataButton, &QPushButton::clicked, this, &MainWindow::saveSentData);
     connect(clearSentDataButton, &QPushButton::clicked, this, &MainWindow::clearSentData);
@@ -769,6 +802,7 @@ void MainWindow::openConvertDataDialog() {
 }
 
 void MainWindow::displayReceiveData(const QByteArray &data) {
+//    qDebug() << "displayReceiveData()" << data.toHex(' ');
 
     if (pauseReceiveCheckBox->isChecked()) {
         return;
@@ -858,14 +892,32 @@ void MainWindow::readSettings() {
 
     QSettings settings("Zhou Jinlong", "Serial Wizard");
 
+    settings.beginGroup("Basic");
+    auto serialType = SerialType(settings.value("serial_type", static_cast<int >(SerialType::Normal)).toInt());
+    if (serialType == SerialType::TcpServer) {
+        tcpServerRadioButton->setChecked(true);
+    } else if (serialType == SerialType::TcpClient) {
+        tcpClientRadioButton->setChecked(true);
+    } else if (serialType == SerialType::Bridge) {
+        bridgeRadioButton->setChecked(true);
+    } else {
+        serialRadioButton->setChecked(true);
+    }
+
+    _serialType = serialType;
+
     settings.beginGroup("SerialSettings");
     auto nameIndex = settings.value("name", 0).toInt();
-    auto baudRateIndex = settings.value("baud_rate", 0).toInt();
-    auto dataBitsIndex = (QSerialPort::DataBits) settings.value("data_bits", 0).toInt();
+    auto baudRateIndex = settings.value("baud_rate", 5).toInt();
+    auto dataBitsIndex = (QSerialPort::DataBits) settings.value("data_bits", 3).toInt();
     auto stopBitsIndex = (QSerialPort::StopBits) settings.value("stop_bits", 0).toInt();
     auto parityIndex = (QSerialPort::Parity) settings.value("parity", 0).toInt();
     auto sendText = settings.value("send_text", "").toString();
 
+    auto maxCount = serialPortNameComboBox->maxCount();
+    if (nameIndex > maxCount - 1) {
+        nameIndex = 0;
+    }
     serialPortNameComboBox->setCurrentIndex(nameIndex);
     serialPortBaudRateComboBox->setCurrentIndex(baudRateIndex);
     serialPortDataBitsComboBox->setCurrentIndex(dataBitsIndex);
@@ -941,6 +993,21 @@ void MainWindow::writeSettings() {
     qDebug() << "writeSettings()";
 
     QSettings settings("Zhou Jinlong", "Serial Wizard");
+
+    settings.beginGroup("Basic");
+    SerialType serialType;
+
+    if (tcpServerRadioButton->isChecked()) {
+        serialType = SerialType::TcpServer;
+    } else if (tcpClientRadioButton->isChecked()) {
+        serialType = SerialType::TcpClient;
+    } else if (bridgeRadioButton->isChecked()) {
+        serialType = SerialType::Bridge;
+    } else {
+        serialType = SerialType::Normal;
+    }
+
+    settings.setValue("serial_type", static_cast<int >(serialType));
 
     settings.beginGroup("SerialSettings");
     settings.setValue("name", serialPortNameComboBox->currentIndex());
@@ -1122,7 +1189,15 @@ void MainWindow::startAutoSendTimerIfNeed() {
 
 void MainWindow::handlerSerialNotOpen() {
     autoSendTimer->stop();
-    showMessage(tr("消息"), tr("串口未打开，请打开串口"));
+    if (_serialType == SerialType::TcpServer) {
+        showMessage(tr("消息"), tr("TCP服务器未建立或者没有客户端连接"));
+    } else if (_serialType == SerialType::TcpClient) {
+        showMessage(tr("消息"), tr("没有连接到服务器"));
+    } else if (_serialType == SerialType::Bridge) {
+        showMessage(tr("消息"), tr("串口未打开，或者TCP服务器为建立，或者没有客户端连接"));
+    } else {
+        showMessage(tr("消息"), tr("串口未打开，请打开串口"));
+    }
 }
 
 void MainWindow::updateStatusMessage(const QString &message) {
@@ -1169,8 +1244,9 @@ bool MainWindow::isReadWriterConnected() {
 }
 
 void MainWindow::updateTcpClient(const QString &address, qint16 port) {
-    tcpClientLabel->setText(QString("client %1:%2").arg(address).arg(port));
-    updateStatusMessage(QString(tr("与TCP客户端 %1:%2建立连接")).arg(address).arg(port));
+    auto clientPort = static_cast<uint>(port) & 0x00FFFF;
+    tcpClientLabel->setText(QString("client %1:%2").arg(address).arg(clientPort));
+    updateStatusMessage(QString(tr("与TCP客户端 %1:%2建立连接")).arg(address).arg(clientPort));
 }
 
 void MainWindow::clearTcpClient() {

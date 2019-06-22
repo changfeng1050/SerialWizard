@@ -19,7 +19,7 @@ bool TcpClientReadWriter::open() {
         qDebug() << "connected";
     });
 
-    qDebug() << "TcpClientReadWriter type:" << _tcpSocket->socketType();
+    qDebug() << "TcpClientReadWriter type:" << _tcpSocket->socketType() << _address << _port;
 
     connect(_tcpSocket, static_cast<void (QTcpSocket::*)(QTcpSocket::SocketError)>(&QTcpSocket::error),
             [](QAbstractSocket::SocketError error) {

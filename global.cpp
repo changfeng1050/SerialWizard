@@ -43,6 +43,16 @@ QString fromGbk(const QByteArray &data) {
     return gbk->toUnicode(data);
 }
 
+QByteArray toGbkByteArray(const QString &text) {
+    qDebug() << "toGbkByteArray" << text;
+    return text.toLocal8Bit();
+}
+
+QByteArray toUtf8ByteArray(const QString &text) {
+    qDebug() << "toUtf8ByteArray" << text;
+    return text.toUtf8();
+}
+
 bool okToContinue(const QString &title, const QString &text, QWidget *parent) {
     return QMessageBox::Yes == QMessageBox::warning(parent, title, text, QMessageBox::Yes | QMessageBox::No);
 }

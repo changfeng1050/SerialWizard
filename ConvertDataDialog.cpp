@@ -80,6 +80,10 @@ void ConvertDataDialog::createConnect() {
         auto hex = hexCheckBox->isChecked();
         auto fromCodec = fromCodecComboBox->currentText();
         auto toCodec = toCodecComboBox->currentText();
+        if (inputText.isEmpty()) {
+            showWarning("", QString(tr("请输入内容！")));
+            return;
+        }
         if (hex) {
             auto byteArray = dataFromHex(inputText);
 
@@ -90,13 +94,78 @@ void ConvertDataDialog::createConnect() {
             } else if (fromCodec == UTF8) {
                 resultText = fromUtf8(byteArray);
             }
+            if (resultText.isEmpty()) {
+                showWarning("", QString(tr("请检查输入数据是否有误！")));
+                return;
+            }
             resultTextEdit->setText(resultText);
         } else {
+            const auto &text = inputText;
 
+            QString resultText;
+            if (fromCodec == GBK) {
+                resultText = toGbkByteArray(text).toHex(' ').toUpper();
+            } else {
+                resultText = toUtf8ByteArray(text).toHex(' ').toUpper();
+            }
+            if (resultText.isEmpty()) {
+                showWarning("", QString(tr("请检查输入数据是否有误！")));
+                return;
+            }
+            resultTextEdit->setText(resultText);
         }
     });
 
     connect(convertButton, &QPushButton::clicked, [this] {
+        auto inputText = inputTextEdit->toPlainText();
+        auto hex = hexCheckBox->isChecked();
+        auto fromCodec = fromCodecComboBox->currentText();
+        auto toCodec = toCodecComboBox->currentText();
+
+        if (hex) {
+            auto byteArray = dataFromHex(inputText);
+
+            QString text;
+
+            if (fromCodec == GBK) {
+                text = fromGbk(byteArray);
+            } else if (fromCodec == UTF8) {
+                text = fromUtf8(byteArray);
+            }
+
+            if (text.isEmpty()) {
+                showWarning("", QString(tr("请检查输入数据是否有误！")));
+                return;
+            }
+
+            QString convertedText;
+            if (toCodec == GBK) {
+                convertedText = toGbkByteArray(text).toHex(' ').toUpper();
+            } else {
+                convertedText = toUtf8ByteArray(text).toHex(' ').toUpper();
+            }
+
+            if (convertedText.isEmpty()) {
+                showWarning("", QString(tr("请检查输入数据是否有误！")));
+                return;
+            }
+
+            resultTextEdit->setText(convertedText);
+        } else {
+            const auto &text = inputText;
+
+            QString resultText;
+            if (toCodec == GBK) {
+                resultText = toGbkByteArray(text).toHex(' ').toUpper();
+            } else {
+                resultText = toUtf8ByteArray(text).toHex(' ').toUpper();
+            }
+            if (resultText.isEmpty()) {
+                showWarning("", QString(tr("请检查输入数据是否有误！")));
+                return;
+            }
+            resultTextEdit->setText(resultText);
+        }
 
     });
 }

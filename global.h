@@ -14,6 +14,10 @@ extern QString fromUtf8(const QByteArray &data);
 
 extern QString fromGbk(const QByteArray &data);
 
+extern QByteArray toGbkByteArray(const QString &text);
+
+extern QByteArray toUtf8ByteArray(const QString &text);
+
 extern QString getTimestamp();
 
 

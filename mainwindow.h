@@ -45,6 +45,13 @@ Q_OBJECT
 public:
     explicit MainWindow(QWidget *parent = nullptr);
 
+    enum class SerialType {
+        Normal = 1,
+        TcpServer,
+        TcpClient,
+        Bridge
+    };
+
     void init();
 
     void initUi();
@@ -264,6 +271,8 @@ private:
     bool _loopSend{false};
 
     SendType _sendType{SendType::Normal};
+
+    SerialType _serialType{SerialType::Normal};
 
 };
 
