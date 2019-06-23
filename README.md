@@ -23,14 +23,14 @@ SerialWizard是一个使用Qt & C++ 开发的跨平台串口调试工具
 
 本源码可以使用[Clion](https://www.jetbrains.com/clion/)和[Qt Creator](https://github.com/qt-creator/qt-creator)开发
 
-> * Qt 5.9.4
+> * Qt 5.12.0
 > * C++ 17
 
 ### Clion
 
 使用Clion开发需要注意事项
 
-> * Clion工具链设置 File -> Settiongs -> Build,Execution,Deployment -> Toolchians -> Enviromant, 选择 MinGW，选择MinGw的路径，也可以选择Qt自带的版本的路径，如 C:\Qt\Qt5.9.4\Tools\mingw530_32
+> * Clion工具链设置 File -> Settiongs -> Build,Execution,Deployment -> Toolchians -> Enviromant, 选择 MinGW，选择MinGw的路径，也可以选择Qt自带的版本的路径，如 C:\Qt\Qt5.12.0\Tools\mingw730_32
 > * CMakeList.txt中配置Qt的相关设置
 
 ### Qt Creator
