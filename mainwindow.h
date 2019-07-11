@@ -49,7 +49,8 @@ public:
         Normal = 1,
         TcpServer,
         TcpClient,
-        Bridge
+        Bridge,
+        SerialBridge,
     };
 
     void init();
@@ -205,6 +206,7 @@ private:
     QRadioButton *tcpServerRadioButton;
     QRadioButton *tcpClientRadioButton;
     QRadioButton *bridgeRadioButton;
+    QRadioButton *serialBridgeRadioButton;
 
     QButtonGroup *readWriterButtonGroup;
 
@@ -215,6 +217,13 @@ private:
     QComboBox *serialPortDataBitsComboBox;
     QComboBox *serialPortStopBitsComboBox;
     QPushButton *openSerialButton;
+
+    // 第二串口设置
+    QComboBox *secondSerialPortNameComboBox;
+    QComboBox *secondSerialPortBaudRateComboBox;
+    QComboBox *secondSerialPortParityComboBox;
+    QComboBox *secondSerialPortDataBitsComboBox;
+    QComboBox *secondSerialPortStopBitsComboBox;
 
     // TCP设置
     QLineEdit *tcpAddressLineEdit;

@@ -25,8 +25,10 @@
 #include <data/TcpClientReadWriter.h>
 #include <QRadioButton>
 #include <QButtonGroup>
+#include <QTabWidget>
 #include <data/BridgeReadWriter.h>
 #include <QtSerialPort/QSerialPortInfo>
+#include <data/SerialBridgeReadWriter.h>
 
 #include "MainWindow.h"
 #include "CalculateCheckSumDialog.h"
@@ -73,6 +75,7 @@ void MainWindow::initUi() {
     tcpServerRadioButton = new QRadioButton("TCP(服务器)", this);
     tcpClientRadioButton = new QRadioButton("TCP(客户端)", this);
     bridgeRadioButton = new QRadioButton(tr("桥接"), this);
+    serialBridgeRadioButton = new QRadioButton(tr("转发"), this);
 
     serialRadioButton->setChecked(true);
 
@@ -86,12 +89,14 @@ void MainWindow::initUi() {
     readWriterButtonGroup->addButton(tcpServerRadioButton);
     readWriterButtonGroup->addButton(tcpClientRadioButton);
     readWriterButtonGroup->addButton(bridgeRadioButton);
+    readWriterButtonGroup->addButton(serialBridgeRadioButton);
 
     auto readWriterButtonLayout = new QGridLayout;
     readWriterButtonLayout->addWidget(serialRadioButton, 0, 0);
     readWriterButtonLayout->addWidget(bridgeRadioButton, 0, 1);
     readWriterButtonLayout->addWidget(tcpServerRadioButton, 1, 0);
     readWriterButtonLayout->addWidget(tcpClientRadioButton, 1, 1);
+    readWriterButtonLayout->addWidget(serialBridgeRadioButton, 2, 0);
 
 
     auto readWriterButtonGroupBox = new QGroupBox(tr("打开模式"));
@@ -117,7 +122,6 @@ void MainWindow::initUi() {
                                                  << "57600"
                                                  << "115200"
                                                  << "256000"
-
     );
     serialPortBaudRateLabel->setBuddy(serialPortBaudRateComboBox);
 
@@ -143,6 +147,7 @@ void MainWindow::initUi() {
     serialPortParityComboBox->addItem(tr("标志校验"), QSerialPort::MarkParity);
     serialPortParityLabel->setBuddy(serialPortParityComboBox);
 
+
     auto serialPortSettingsGridLayout = new QGridLayout;
     serialPortSettingsGridLayout->addWidget(serialPortNameLabel, 0, 0);
     serialPortSettingsGridLayout->addWidget(serialPortNameComboBox, 0, 1);
@@ -155,8 +160,76 @@ void MainWindow::initUi() {
     serialPortSettingsGridLayout->addWidget(serialPortParityLabel, 4, 0);
     serialPortSettingsGridLayout->addWidget(serialPortParityComboBox, 4, 1);
 
-    auto serialPortSettingsGroupBox = new QGroupBox(tr("串口设置"));
-    serialPortSettingsGroupBox->setLayout(serialPortSettingsGridLayout);
+    auto secondSerialPortNameLabel = new QLabel(tr("串口"), this);
+    QStringList secondSerialPortNameList = getSerialNameList();
+
+    secondSerialPortNameComboBox = new QComboBox(this);
+    secondSerialPortNameComboBox->addItems(serialPortNameList);
+    secondSerialPortNameLabel->setBuddy(secondSerialPortNameComboBox);
+
+    auto *secondSerialPortBaudRateLabel = new QLabel(tr("波特率"), this);
+    secondSerialPortBaudRateComboBox = new QComboBox(this);
+    secondSerialPortBaudRateComboBox->addItems(QStringList()
+                                                       << "1200"
+                                                       << "2400"
+                                                       << "4800"
+                                                       << "9600"
+                                                       << "19200"
+                                                       << "38400"
+                                                       << "25600"
+                                                       << "57600"
+                                                       << "115200"
+                                                       << "256000"
+    );
+    secondSerialPortBaudRateLabel->setBuddy(secondSerialPortBaudRateComboBox);
+
+
+    auto secondSerialPortDataBitsLabel = new QLabel(tr("数据位"), this);
+    secondSerialPortDataBitsComboBox = new QComboBox(this);
+    secondSerialPortDataBitsComboBox->addItems(QStringList() << "5" << "6" << "7" << "8");
+    secondSerialPortDataBitsLabel->setBuddy(secondSerialPortDataBitsComboBox);
+
+    auto secondSerialPortStopBitsLabel = new QLabel(tr("停止位"), this);
+    secondSerialPortStopBitsComboBox = new QComboBox(this);
+    secondSerialPortStopBitsLabel->setBuddy(secondSerialPortStopBitsComboBox);
+    secondSerialPortStopBitsComboBox->addItem(tr("1"), QSerialPort::OneStop);
+    secondSerialPortStopBitsComboBox->addItem(tr("1.5"), QSerialPort::OneAndHalfStop);
+    secondSerialPortStopBitsComboBox->addItem(tr("2"), QSerialPort::TwoStop);
+
+    auto secondSerialPortParityLabel = new QLabel(tr("校验位"), this);
+    secondSerialPortParityComboBox = new QComboBox(this);
+    secondSerialPortParityComboBox->addItem(tr("无校验"), QSerialPort::NoParity);
+    secondSerialPortParityComboBox->addItem(tr("奇校验"), QSerialPort::OddParity);
+    secondSerialPortParityComboBox->addItem(tr("偶校验"), QSerialPort::EvenParity);
+    secondSerialPortParityComboBox->addItem(tr("空校验"), QSerialPort::SpaceParity);
+    secondSerialPortParityComboBox->addItem(tr("标志校验"), QSerialPort::MarkParity);
+    secondSerialPortParityLabel->setBuddy(secondSerialPortParityComboBox);
+
+
+    auto secondSerialPortSettingsGridLayout = new QGridLayout;
+    secondSerialPortSettingsGridLayout->addWidget(secondSerialPortNameLabel, 0, 0);
+    secondSerialPortSettingsGridLayout->addWidget(secondSerialPortNameComboBox, 0, 1);
+    secondSerialPortSettingsGridLayout->addWidget(secondSerialPortBaudRateLabel, 1, 0);
+    secondSerialPortSettingsGridLayout->addWidget(secondSerialPortBaudRateComboBox, 1, 1);
+    secondSerialPortSettingsGridLayout->addWidget(secondSerialPortDataBitsLabel, 2, 0);
+    secondSerialPortSettingsGridLayout->addWidget(secondSerialPortDataBitsComboBox, 2, 1);
+    secondSerialPortSettingsGridLayout->addWidget(secondSerialPortStopBitsLabel, 3, 0);
+    secondSerialPortSettingsGridLayout->addWidget(secondSerialPortStopBitsComboBox, 3, 1);
+    secondSerialPortSettingsGridLayout->addWidget(secondSerialPortParityLabel, 4, 0);
+    secondSerialPortSettingsGridLayout->addWidget(secondSerialPortParityComboBox, 4, 1);
+
+    auto firstSerialSettingsWidget = new QWidget();
+    firstSerialSettingsWidget->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    firstSerialSettingsWidget->setLayout(serialPortSettingsGridLayout);
+
+    auto secondSerialSettingsWidget = new QWidget();
+    secondSerialSettingsWidget->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    secondSerialSettingsWidget->setLayout(secondSerialPortSettingsGridLayout);
+
+    auto serialTabWidget = new QTabWidget(this);
+    serialTabWidget->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    serialTabWidget->addTab(firstSerialSettingsWidget, tr("第一串口设置"));
+    serialTabWidget->addTab(secondSerialSettingsWidget, tr("第二串口设置"));
 
     openSerialButton = new QPushButton(tr("打开"), this);
 
@@ -349,7 +422,7 @@ void MainWindow::initUi() {
     auto mainVBoxLayout1 = new QVBoxLayout;
     mainVBoxLayout1->setSizeConstraint(QLayout::SetFixedSize);
     mainVBoxLayout1->addWidget(readWriterButtonGroupBox);
-    mainVBoxLayout1->addWidget(serialPortSettingsGroupBox);
+    mainVBoxLayout1->addWidget(serialTabWidget);
     mainVBoxLayout1->addWidget(tcpGroupBox);
     mainVBoxLayout1->addWidget(openSerialButton);
     mainVBoxLayout1->addWidget(receiveSettingGroupBox);
@@ -477,6 +550,43 @@ void MainWindow::openReadWriter() {
             showError("", tr("连接服务器失败"));
             return;
         }
+        _readWriter = readWriter;
+    } else if (readWriterButtonGroup->checkedButton() == serialBridgeRadioButton) {
+        _serialType = SerialType::SerialBridge;
+
+        auto settings1 = new SerialSettings();
+        settings1->name = serialPortNameComboBox->currentText();
+        settings1->baudRate = serialPortBaudRateComboBox->currentText().toInt();
+
+        settings1->dataBits = (QSerialPort::DataBits) serialPortDataBitsComboBox->currentText().toInt();
+        settings1->stopBits = (QSerialPort::StopBits) serialPortStopBitsComboBox->currentData().toInt();
+        settings1->parity = (QSerialPort::Parity) serialPortParityComboBox->currentData().toInt();
+
+        auto settings2 = new SerialSettings();
+        settings2->name = secondSerialPortNameComboBox->currentText();
+        settings2->baudRate = secondSerialPortBaudRateComboBox->currentText().toInt();
+
+        settings2->dataBits = (QSerialPort::DataBits) secondSerialPortDataBitsComboBox->currentText().toInt();
+        settings2->stopBits = (QSerialPort::StopBits) secondSerialPortStopBitsComboBox->currentText().toInt();
+        settings2->parity = (QSerialPort::Parity) secondSerialPortParityComboBox->currentText().toInt();
+
+        auto readWriter = new SerialBridgeReadWriter(this);
+
+        readWriter->setSettings(*settings1, *settings2);
+        result = readWriter->open();
+        if (!result) {
+            showWarning(tr("消息"), QString(tr("串口被占用或者不存在,%1")).arg(readWriter->settingsText()));
+            return;
+        }
+
+        connect(readWriter, &SerialBridgeReadWriter::serial1DataRead, [this](const QByteArray &data) {
+            showSendData(data);
+        });
+
+        connect(readWriter, &SerialBridgeReadWriter::serial2DataRead, [this](const QByteArray &data) {
+            showReadData(data);
+        });
+
         _readWriter = readWriter;
     } else {
         _serialType = SerialType::Bridge;
@@ -901,6 +1011,8 @@ void MainWindow::readSettings() {
         tcpClientRadioButton->setChecked(true);
     } else if (serialType == SerialType::Bridge) {
         bridgeRadioButton->setChecked(true);
+    } else if (serialType == SerialType::SerialBridge) {
+        serialBridgeRadioButton->setChecked(true);
     } else {
         serialRadioButton->setChecked(true);
     }
@@ -924,6 +1036,22 @@ void MainWindow::readSettings() {
     serialPortDataBitsComboBox->setCurrentIndex(dataBitsIndex);
     serialPortStopBitsComboBox->setCurrentIndex(stopBitsIndex);
     serialPortParityComboBox->setCurrentIndex(parityIndex);
+
+    auto name2Index = settings.value("name2", 0).toInt();
+    auto baudRate2Index = settings.value("baud_rate2", 5).toInt();
+    auto dataBits2Index = (QSerialPort::DataBits) settings.value("data_bits2", 3).toInt();
+    auto stopBits2Index = (QSerialPort::StopBits) settings.value("stop_bits2", 0).toInt();
+    auto parity2Index = (QSerialPort::Parity) settings.value("parity2", 0).toInt();
+
+    auto maxCount2 = serialPortNameComboBox->maxCount();
+    if (name2Index > maxCount2 - 1) {
+        name2Index = 0;
+    }
+    secondSerialPortNameComboBox->setCurrentIndex(name2Index);
+    secondSerialPortBaudRateComboBox->setCurrentIndex(baudRate2Index);
+    secondSerialPortDataBitsComboBox->setCurrentIndex(dataBits2Index);
+    secondSerialPortStopBitsComboBox->setCurrentIndex(stopBits2Index);
+    secondSerialPortParityComboBox->setCurrentIndex(parity2Index);
 
     settings.beginGroup("SerialReceiveSettings");
     auto addLineReturn = settings.value("add_line_return", true).toBool();
@@ -1004,6 +1132,8 @@ void MainWindow::writeSettings() {
         serialType = SerialType::TcpClient;
     } else if (bridgeRadioButton->isChecked()) {
         serialType = SerialType::Bridge;
+    } else if (serialBridgeRadioButton->isChecked()) {
+        serialType = SerialType::SerialBridge;
     } else {
         serialType = SerialType::Normal;
     }
@@ -1016,6 +1146,12 @@ void MainWindow::writeSettings() {
     settings.setValue("data_bits", serialPortDataBitsComboBox->currentIndex());
     settings.setValue("stop_bits", serialPortStopBitsComboBox->currentIndex());
     settings.setValue("parity", serialPortParityComboBox->currentIndex());
+
+    settings.setValue("name2", secondSerialPortNameComboBox->currentIndex());
+    settings.setValue("baud_rate2", secondSerialPortBaudRateComboBox->currentIndex());
+    settings.setValue("data_bits2", secondSerialPortDataBitsComboBox->currentIndex());
+    settings.setValue("stop_bits2", secondSerialPortStopBitsComboBox->currentIndex());
+    settings.setValue("parity2", secondSerialPortParityComboBox->currentIndex());
 
     settings.setValue("send_text", sendTextEdit->toPlainText());
 
@@ -1044,7 +1180,6 @@ void MainWindow::writeSettings() {
     settings.setValue("last_file_path", runConfig->lastFilePath);
 
     settings.sync();
-
 }
 
 FrameInfo MainWindow::readFrameInfo() const {

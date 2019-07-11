@@ -57,7 +57,7 @@ set(SOURCE_FILES
         serial/FrameSerialController.h
         data/TcpClientReadWriter.cpp
         data/TcpClientReadWriter.h
-        )
+        data/SerialBridgeReadWriter.cpp data/SerialBridgeReadWriter.h)
 
 #add_executable(SerialWizard ${SOURCE_FILES})
 add_executable(SerialWizard WIN32 ${SOURCE_FILES})
