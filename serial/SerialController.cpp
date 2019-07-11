@@ -31,7 +31,7 @@ SerialController::~SerialController() {
 
 void SerialController::setData(QString data) {
     if (_isHex) {
-        _data  = dataFromHex(data);
+        _data = dataFromHex(data);
     } else {
         _data = data.toLocal8Bit();
     }
@@ -50,6 +50,10 @@ void SerialController::setIsHex(bool isHex) {
 
 int SerialController::getCurrentCount() {
     return _currentCount;
+}
+
+void SerialController::setCurrentCount(int count) {
+    _currentCount = count;
 }
 
 void SerialController::setAutoSend(bool autoSend) {

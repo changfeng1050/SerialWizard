@@ -603,6 +603,7 @@ void MainWindow::createConnect() {
 
     connect(resetLoopSendButton, &QPushButton::clicked, [this] {
         currentSendCount = 0;
+        serialController->setCurrentCount(0);
         emit currentWriteCountChanged(currentSendCount);
     });
 

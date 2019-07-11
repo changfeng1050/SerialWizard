@@ -29,6 +29,8 @@ public:
 
     int getCurrentCount();
 
+    void setCurrentCount(int count);
+
     void setAutoSend(bool autoSend);
 
     void setLoopSend(bool loopSend);
