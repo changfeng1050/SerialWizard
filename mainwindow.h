@@ -161,7 +161,7 @@ private:
 
     void updateSendData(bool isHex, const QString &text);
 
-    void updateSendCount(qint64 count);
+    void updateSerialPortNames();
 
     void updateReceiveCount(qint64 count);
 
@@ -217,6 +217,7 @@ private:
     QComboBox *serialPortDataBitsComboBox;
     QComboBox *serialPortStopBitsComboBox;
     QPushButton *openSerialButton;
+    QPushButton *refreshSerialButton;
 
     // 第二串口设置
     QComboBox *secondSerialPortNameComboBox;
@@ -244,6 +245,7 @@ private:
     QCheckBox *displaySendDataAsHexCheckBox;
     QCheckBox *autoSendCheckBox;
     QLineEdit *sendIntervalLineEdit;
+    QLineEdit *emptyLineDelayLindEdit;
     QPushButton *frameInfoSettingButton;
     QPushButton *saveSentDataButton;
     QPushButton *clearSentDataButton;
@@ -274,7 +276,7 @@ private:
 
     SerialController *serialController{nullptr};
 
-    int currentSendCount{0};
+//    int currentSendCount{0};
     int totalSendCount{0};
 
     bool _loopSend{false};
@@ -282,6 +284,8 @@ private:
     SendType _sendType{SendType::Normal};
 
     SerialType _serialType{SerialType::Normal};
+
+    int skipSendCount{0};
 
 };
 
