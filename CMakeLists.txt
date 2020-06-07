@@ -1,7 +1,7 @@
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.16)
 project(SerialWizard)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 #set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
 
@@ -11,14 +11,14 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 # Instruct CMake to run moc automatically when needed.
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
-set(QT_DIR C:/Qt/Qt5.12.0/5.12.0/mingw73_32)
-set(CMAKE_PREFIX_PATH ${QT_DIR} C:/Qt/Qt5.12.0/)
+set(QT_DIR C:/Qt/Qt5.14.2/5.14.2/mingw73_32)
+set(CMAKE_PREFIX_PATH ${QT_DIR} C:/Qt/Qt5.14.2/)
 
 find_package(Qt5Widgets)
 find_package(Qt5Core)
 get_target_property(QtCore_location Qt5::Core LOCATION)
 set_target_properties(Qt5::Core PROPERTIES MAP_IMPORTED_CONFIG_COVERAGE "RELEASE")
-link_directories(${QT_DIR}/lib C:/Qt/Qt5.12.0/Tools/mingw730_32/lib)
+link_directories(${QT_DIR}/lib C:/Qt/Qt5.14.2/Tools/mingw730_32/lib)
 foreach (plugin ${Qt5Network_PLUGINS})
     get_target_property(_loc ${plugin} LOCATION)
     message("Plugin ${plugin} is at location ${_loc}")
