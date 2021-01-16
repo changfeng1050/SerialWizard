@@ -6,36 +6,25 @@
 #include <QDebug>
 #include "LineSerialController.h"
 
-QByteArray LineSerialController::getNextFrame() {
+QByteArray LineSerialController::readNextFrame() {
     if (_dataList.isEmpty()) {
         return QByteArray();
     }
 
     if (_currentCount >= _dataList.count()) {
-        _currentCount =0;
+        _currentCount = 0;
     }
-
 
     auto line = _dataList[_currentCount++];
-    if (_isHex) {
-        return dataFromHex(line);
-    } else {
-        return line.toLocal8Bit();
-    }
+    return line;
 }
 
 MainWindow::SendType LineSerialController::sendType() {
-    return MainWindow::SendType ::Line;
+    return MainWindow::SendType::Line;
 }
 
 LineSerialController::LineSerialController(SerialController *serialController) : SerialController(serialController) {
-
 }
 
-LineSerialController::LineSerialController():SerialController() {
-
-}
-
-int LineSerialController::getTotalCount() {
-    return _dataList.count();
+LineSerialController::LineSerialController() : SerialController() {
 }

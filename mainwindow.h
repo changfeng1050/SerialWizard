@@ -64,7 +64,7 @@ public:
     ~MainWindow() override;
 
     enum class SendType {
-        Normal, Line, Frame, FixedBytes
+        Line
     };
 
 
@@ -246,7 +246,6 @@ private:
     QCheckBox *autoSendCheckBox;
     QLineEdit *sendIntervalLineEdit;
     QLineEdit *emptyLineDelayLindEdit;
-    QPushButton *frameInfoSettingButton;
     QPushButton *saveSentDataButton;
     QPushButton *clearSentDataButton;
 
@@ -263,11 +262,7 @@ private:
 
     QTextEdit *sendTextEdit;
 
-    QPushButton *sendFrameButton;
     QPushButton *sendLineButton;
-    QPushButton *sendFixBytesButton;
-    QLineEdit *byteCountLineEdit;
-    QPushButton *sendAllButton;
 
     AutoSendState autoSendState{AutoSendState::NotStart};
 
@@ -276,12 +271,11 @@ private:
 
     SerialController *serialController{nullptr};
 
-//    int currentSendCount{0};
     int totalSendCount{0};
 
     bool _loopSend{false};
 
-    SendType _sendType{SendType::Normal};
+    SendType _sendType{SendType::Line};
 
     SerialType _serialType{SerialType::Normal};
 

@@ -37,6 +37,7 @@ bool SerialBridgeReadWriter::open() {
     if (!_serialReadWriter2->open()) {
         return false;
     }
+    return true;
 }
 
 bool SerialBridgeReadWriter::isOpen() {
@@ -49,7 +50,7 @@ void SerialBridgeReadWriter::close() {
 }
 
 QByteArray SerialBridgeReadWriter::readAll() {
-    _serialReadWriter1->readAll();
+    return  _serialReadWriter1->readAll();
 }
 
 qint64 SerialBridgeReadWriter::write(const QByteArray &byteArray) const {

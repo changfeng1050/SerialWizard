@@ -17,6 +17,7 @@ TEMPLATE = app
 
 
 SOURCES += main.cpp\
+    data/SerialBridgeReadWriter.cpp \
         mainwindow.cpp \
     global.cpp \
     FrameInfoDialog.cpp \
@@ -34,6 +35,7 @@ SOURCES += main.cpp\
     data/TcpClientReadWriter.cpp
 
 HEADERS  += mainwindow.h \
+    data/SerialBridgeReadWriter.h \
     global.h \
     FrameInfoDialog.h \
     CalculateCheckSumDialog.h \

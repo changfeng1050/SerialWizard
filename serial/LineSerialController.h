@@ -13,11 +13,9 @@ class LineSerialController: public SerialController {
 public:
     explicit LineSerialController();
     explicit LineSerialController(SerialController *serialController);
-    QByteArray getNextFrame() override;
+    QByteArray readNextFrame() override;
 
     MainWindow::SendType sendType() override;
-
-    int getTotalCount() override;
 };
 
 

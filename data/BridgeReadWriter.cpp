@@ -45,6 +45,7 @@ bool BridgeReadWriter::open() {
     if (!_tcpReaderWriter->open()) {
         return false;
     }
+    return true;
 }
 
 bool BridgeReadWriter::isOpen() {
