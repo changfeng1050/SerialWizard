@@ -37,7 +37,7 @@
 #include "serial/LineSerialController.h"
 #include "ConvertDataDialog.h"
 
-MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), receiveCount(0), sendCount(0) {
+MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
 
     init();
     initUi();
@@ -58,7 +58,6 @@ MainWindow::~MainWindow() {
 
 void MainWindow::init() {
     autoSendTimer = new QTimer();
-    frameInfo = nullptr;
 }
 
 void MainWindow::initUi() {
@@ -274,7 +273,6 @@ void MainWindow::initUi() {
     receiveDataGroupBox->setLayout(receiveDataLayout);
     receiveDataGroupBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
-    sendHexCheckBox = new QCheckBox(tr("十六进制发送"), this);
     displaySendDataCheckBox = new QCheckBox(tr("显示发送数据"), this);
     displaySendDataAsHexCheckBox = new QCheckBox(tr("十六进制显示"), this);
 
@@ -339,11 +337,10 @@ void MainWindow::initUi() {
     clearSentDataButton = new QPushButton(tr("清除显示"), this);
 
     auto sendSettingLayout = new QGridLayout;
-    sendSettingLayout->addWidget(sendHexCheckBox, 0, 0, 1, 2);
-    sendSettingLayout->addWidget(displaySendDataCheckBox, 1, 0);
-    sendSettingLayout->addWidget(displaySendDataAsHexCheckBox, 1, 1);
-    sendSettingLayout->addWidget(saveSentDataButton, 2, 0);
-    sendSettingLayout->addWidget(clearSentDataButton, 2, 1);
+    sendSettingLayout->addWidget(displaySendDataCheckBox, 0, 0);
+    sendSettingLayout->addWidget(displaySendDataAsHexCheckBox, 0, 1);
+    sendSettingLayout->addWidget(saveSentDataButton, 1, 0);
+    sendSettingLayout->addWidget(clearSentDataButton, 1, 1);
 
     auto sendSettingGroupBox = new QGroupBox(tr("发送设置"));
     sendSettingGroupBox->setLayout(sendSettingLayout);
@@ -354,8 +351,27 @@ void MainWindow::initUi() {
     lineLayout->addWidget(sendLineButton);
     lineGroupBox->setLayout(lineLayout);
 
+    hexCheckBox = new QCheckBox(tr("十六进制"), this);
+    sendLineReturnCheckBox = new QCheckBox(tr("自动添加换行"), this);
+    sendRNLineReturnButton = new QRadioButton(tr("\\r\\n"), this);
+    sendRReturnLineButton = new QRadioButton(tr("\\r"), this);
+    sendNReturnLineButton = new QRadioButton(tr("\\n"), this);
+
+    lineReturnButtonGroup = new QButtonGroup(this);
+    lineReturnButtonGroup->addButton(sendRNLineReturnButton);
+    lineReturnButtonGroup->addButton(sendRReturnLineButton);
+    lineReturnButtonGroup->addButton(sendNReturnLineButton);
+
+    auto lineReturnLayout = new QHBoxLayout;
+    lineReturnLayout->addWidget(sendRNLineReturnButton);
+    lineReturnLayout->addWidget(sendRReturnLineButton);
+    lineReturnLayout->addWidget(sendNReturnLineButton);
+
     auto optionSendLayout = new QVBoxLayout;
     optionSendLayout->addWidget(lineGroupBox);
+    optionSendLayout->addWidget(sendLineReturnCheckBox);
+    optionSendLayout->addLayout(lineReturnLayout);
+    optionSendLayout->addWidget(hexCheckBox);
 
     optionSendLayout->setSizeConstraint(QLayout::SetFixedSize);
 
@@ -700,7 +716,7 @@ void MainWindow::createConnect() {
             stopAutoSend();
         } else {
             _sendType = SendType::Line;
-            updateSendData(sendHexCheckBox->isChecked(), sendTextEdit->toPlainText());
+            updateSendData(hexCheckBox->isChecked(), sendTextEdit->toPlainText());
             updateSendType();
             sendNextData();
             startAutoSendTimerIfNeed();
@@ -712,6 +728,19 @@ void MainWindow::createConnect() {
             resetSendButtonText();
         }
     });
+
+    connect(lineReturnButtonGroup, QOverload<QAbstractButton *, bool>::of(&QButtonGroup::buttonToggled),
+            [=](QAbstractButton *button, bool checked) {
+                if (checked) {
+                    if (button == sendRReturnLineButton) {
+                        lineReturn = QByteArray("\r");
+                    } else if (button == sendNReturnLineButton) {
+                        lineReturn = QByteArray("\n");
+                    } else {
+                        lineReturn = QByteArray("\r\n");
+                    }
+                }
+            });
 
     connect(autoSendTimer, &QTimer::timeout,
             [this] {
@@ -806,6 +835,9 @@ void MainWindow::displayReceiveData(const QByteArray &data) {
     }
 
     if (displayReceiveDataAsHexCheckBox->isChecked()) {
+        if (!s.isEmpty()) {
+            s.append(" ");
+        }
         s.append(dataToHex(data));
     } else {
         s.append(QString::fromLocal8Bit(data));
@@ -828,23 +860,6 @@ void MainWindow::displaySentData(const QByteArray &data) {
     } else {
         sendDataBrowser->append(QString::fromLocal8Bit(data));
     }
-}
-
-void MainWindow::openFrameInfoSettingDialog() {
-
-    auto info = readFrameInfo();
-
-    FrameInfoDialog dialog(info, this);
-
-    connect(&dialog, &FrameInfoDialog::frameInfoChanged, [this](FrameInfo info) {
-        frameInfo = new FrameInfo(info);
-        writeFrameInfo(info);
-        qDebug() << "head" << frameInfo->head << "end" << frameInfo->end
-                 << "len index" << info.lenIndex << "len count" << info.lenCount
-                 << "head len" << info.headLen << "end len" << info.endLen;
-    });
-
-    dialog.exec();
 }
 
 void MainWindow::sendNextData() {
@@ -878,9 +893,11 @@ void MainWindow::sendNextData() {
             emit currentWriteCountChanged(serialController->getCurrentCount());
             return;
         }
-
         writeData(data);
-        if (sendHexCheckBox->isChecked()) {
+        if (sendLineReturnCheckBox->isChecked()) {
+            writeData(lineReturn);
+        }
+        if (hexCheckBox->isChecked()) {
             updateStatusMessage(QString(tr("发送 %1")).arg(QString(dataToHex(data))));
         } else {
             updateStatusMessage(QString(tr("发送 %1")).arg(QString(data)));
@@ -900,7 +917,7 @@ void MainWindow::updateSendData(bool isHex, const QString &text) {
             lines << in.readLine();
         }
         QList<QByteArray> dataList;
-        if (sendHexCheckBox->isChecked()) {
+        if (hexCheckBox->isChecked()) {
             for (auto &line :lines) {
                 dataList << dataFromHex(line);
             }
@@ -992,11 +1009,7 @@ void MainWindow::readSettings() {
 
     auto loopSend = settings.value("loop_send", false).toBool();
 
-    auto enableFrameInfo = settings.value("enable_frame_info", false).toBool();
-
-    auto fixByteCount = settings.value("fix_byte_count", false).toInt();
-
-    sendHexCheckBox->setChecked(sendAsHex);
+    hexCheckBox->setChecked(sendAsHex);
     displaySendDataCheckBox->setChecked(displaySendData);
     displaySendDataAsHexCheckBox->setChecked(displaySendDataAsHex);
     autoSendCheckBox->setChecked(autoSend);
@@ -1004,7 +1017,18 @@ void MainWindow::readSettings() {
     sendIntervalLineEdit->setText(QString::number(autoSendInterval));
     emptyLineDelayLindEdit->setText(QString::number(emptyLineDelay));
 
-    frameInfo = new FrameInfo(readFrameInfo());
+    auto sendLineReturn = settings.value("send_line_return", false).toBool();
+    sendLineReturnCheckBox->setChecked(sendLineReturn);
+
+    auto sendLineReturnType = LineReturn(
+            settings.value("send_line_return_type", static_cast<int >(LineReturn::RN)).toInt());
+    if (sendLineReturnType == LineReturn::R) {
+        sendRReturnLineButton->setChecked(true);
+    } else if (sendLineReturnType == LineReturn::N) {
+        sendNReturnLineButton->setChecked(true);
+    } else {
+        sendRNLineReturnButton->setChecked(true);
+    }
 
     settings.beginGroup("TcpSettings");
     auto tcpPort = settings.value("tcp_port").toInt();
@@ -1073,13 +1097,27 @@ void MainWindow::writeSettings() {
     settings.setValue("add_timestamp", addReceiveTimestampCheckBox->isChecked());
 
     settings.beginGroup("SerialSendSettings");
-    settings.setValue("send_as_hex", sendHexCheckBox->isChecked());
+    settings.setValue("send_as_hex", hexCheckBox->isChecked());
     settings.setValue("display_send_data", displaySendDataCheckBox->isChecked());
     settings.setValue("display_send_data_as_hex", displaySendDataAsHexCheckBox->isChecked());
     settings.setValue("auto_send", autoSendCheckBox->isChecked());
     settings.setValue("auto_send_interval", sendIntervalLineEdit->text().toInt());
     settings.setValue("empty_line_delay", emptyLineDelayLindEdit->text().toInt());
     settings.setValue("loop_send", loopSendCheckBox->isChecked());
+    settings.setValue("send_line_return", sendLineReturnCheckBox->isChecked());
+
+    LineReturn sendLineReturn;
+    if (sendRNLineReturnButton->isChecked()) {
+        sendLineReturn = LineReturn::RN;
+    } else if (sendRReturnLineButton->isChecked()) {
+        sendLineReturn = LineReturn::R;
+    } else if (sendNReturnLineButton->isChecked()) {
+        sendLineReturn = LineReturn::N;
+    } else {
+        sendLineReturn = LineReturn::RN;
+    }
+
+    settings.setValue("send_line_return_type", static_cast<int >(sendLineReturn));
 
     settings.beginGroup("TcpSettings");
     settings.setValue("tcp_port", tcpPortLineEdit->text().toInt());
@@ -1087,44 +1125,6 @@ void MainWindow::writeSettings() {
     settings.beginGroup("RunConfig");
     settings.setValue("last_dir", runConfig->lastDir);
     settings.setValue("last_file_path", runConfig->lastFilePath);
-
-    settings.sync();
-}
-
-FrameInfo MainWindow::readFrameInfo() const {
-    QSettings settings("Zhou Jinlong", "Serial Wizard");
-
-    settings.beginGroup("FrameInfo");
-
-    FrameInfo info;
-
-    info.frame = settings.value("frame",
-                                "AA A0 5F 88 24 00 00 BC AE 04 90 05 09 15 DF 00 0A 14 D0 FB B4 AB D3 C3 D3 EF 31 31 C7 EB D5 BE CE C8 B7 F6 BA C3 02 09 05 1C D0 FB B4 AB D3 C3 D3 EF 31 32 B3 B5 C1 BE D7 AA CD E4 C7 EB D5 BE CE C8 B7 F6 BA C3 02 09 05 20 D0 FB B4 AB D3 C3 D3 EF 31 33 C7 EB B1 A3 B9 DC BA C3 CB E6 C9 ED D0 AF B4 F8 B5 C4 B2 C6 CE EF 02 09 05 1E D0 FB B4 AB D3 C3 D3 EF 31 34 BB B6 D3 AD B3 CB D7 F8 B1 BE B9 AB CB BE B9 B7 53 55").toString();
-    info.head = (unsigned char) settings.value("head", 0xAA).toInt();
-    info.end = (unsigned char) settings.value("end", 0x55).toInt();
-    info.lenIndex = settings.value("len_index", 3).toInt();
-    info.lenCount = settings.value("len_count", 1).toInt();
-    info.headLen = settings.value("head_len", 5).toInt();
-    info.endLen = settings.value("end_len", 3).toInt();
-
-    return info;
-}
-
-void MainWindow::writeFrameInfo(const FrameInfo &info) const {
-    QSettings settings("Zhou Jinlong", "Serial Wizard");
-
-    settings.beginGroup("FrameInfo");
-
-    settings.setValue("frame", info.frame);
-
-    settings.setValue("head", info.head);
-    settings.setValue("end", info.end);
-
-    settings.setValue("len_index", info.lenIndex);
-    settings.setValue("len_count", info.lenCount);
-
-    settings.setValue("head_len", 5);
-    settings.setValue("end_len", 3);
 
     settings.sync();
 }

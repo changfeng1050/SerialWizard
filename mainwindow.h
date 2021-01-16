@@ -39,7 +39,6 @@ struct RunConfig {
     QString lastFilePath;
 };
 
-
 class MainWindow : public QMainWindow {
 Q_OBJECT
 public:
@@ -51,6 +50,12 @@ public:
         TcpClient,
         Bridge,
         SerialBridge,
+    };
+
+    enum class LineReturn {
+        RN = 1,
+        R,
+        N,
     };
 
     void init();
@@ -67,7 +72,6 @@ public:
         Line
     };
 
-
 public:
 
 signals:
@@ -81,7 +85,6 @@ signals:
     void currentWriteCountChanged(qint64 count);
 
 public slots:
-
 
     void openReadWriter();
 
@@ -109,8 +112,6 @@ public slots:
 
     void openConvertDataDialog();
 
-    void openFrameInfoSettingDialog();
-
     void clearReceivedData();
 
     void saveReceivedData();
@@ -135,9 +136,7 @@ public slots:
 
     void updateSendType();
 
-
 private:
-
 
     enum class AutoSendState {
         NotStart, Sending, Finish
@@ -150,10 +149,6 @@ private:
     void readSettings();
 
     void writeSettings();
-
-    FrameInfo readFrameInfo() const;
-
-    void writeFrameInfo(const FrameInfo &info) const;
 
     void createActions();
 
@@ -240,7 +235,7 @@ private:
     QCheckBox *addReceiveTimestampCheckBox;
 
     // 发送设置
-    QCheckBox *sendHexCheckBox;
+    QCheckBox *hexCheckBox;
     QCheckBox *displaySendDataCheckBox;
     QCheckBox *displaySendDataAsHexCheckBox;
     QCheckBox *autoSendCheckBox;
@@ -254,20 +249,22 @@ private:
     QLineEdit *currentSendCountLineEdit;
     QLabel *totalSendCountLabel;
 
-    FrameInfo *frameInfo;
-
-
     QTextBrowser *receiveDataBrowser;
     QTextBrowser *sendDataBrowser;
 
     QTextEdit *sendTextEdit;
 
     QPushButton *sendLineButton;
+    QCheckBox *sendLineReturnCheckBox;
+    QRadioButton *sendRNLineReturnButton;
+    QRadioButton *sendRReturnLineButton;
+    QRadioButton *sendNReturnLineButton;
+
+    QButtonGroup *lineReturnButtonGroup;
 
     AutoSendState autoSendState{AutoSendState::NotStart};
 
     QTimer *autoSendTimer{nullptr};
-
 
     SerialController *serialController{nullptr};
 
@@ -281,7 +278,7 @@ private:
 
     int skipSendCount{0};
 
+    QByteArray lineReturn;
 };
-
 
 #endif //SERIALWIZARD_MAINWINDOW_H
