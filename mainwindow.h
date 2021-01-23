@@ -279,6 +279,8 @@ private:
     int skipSendCount{0};
 
     QByteArray lineReturn;
+
+    bool _dirty{true};
 };
 
 #endif //SERIALWIZARD_MAINWINDOW_H

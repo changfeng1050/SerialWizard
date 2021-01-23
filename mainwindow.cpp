@@ -627,7 +627,6 @@ void MainWindow::createConnect() {
 
     connect(readWriterButtonGroup, QOverload<QAbstractButton *, bool>::of(&QButtonGroup::buttonToggled),
             [=](QAbstractButton *button, bool checked) {
-
                 if (checked && isReadWriterOpen()) {
                     SerialType serialType;
                     if (button == tcpServerRadioButton) {
@@ -673,6 +672,7 @@ void MainWindow::createConnect() {
     });
 
     connect(refreshSerialButton, &QPushButton::clicked, [=] {
+        _dirty = true;
         updateSerialPortNames();
     });
 
@@ -715,9 +715,12 @@ void MainWindow::createConnect() {
         if (autoSendState == AutoSendState::Sending) {
             stopAutoSend();
         } else {
-            _sendType = SendType::Line;
-            updateSendData(hexCheckBox->isChecked(), sendTextEdit->toPlainText());
-            updateSendType();
+            if (_dirty) {
+                _dirty = false;
+                _sendType = SendType::Line;
+                updateSendData(hexCheckBox->isChecked(), sendTextEdit->toPlainText());
+                updateSendType();
+            }
             sendNextData();
             startAutoSendTimerIfNeed();
         }
@@ -746,6 +749,13 @@ void MainWindow::createConnect() {
             [this] {
                 sendNextData();
             });
+    connect(hexCheckBox, &QCheckBox::stateChanged, [this] {
+        this->_dirty = true;
+    });
+
+    connect(sendTextEdit, &QTextEdit::textChanged, [this] {
+        this->_dirty = true;
+    });
 }
 
 void MainWindow::setOpenButtonText(bool isOpen) {
@@ -917,7 +927,7 @@ void MainWindow::updateSendData(bool isHex, const QString &text) {
             lines << in.readLine();
         }
         QList<QByteArray> dataList;
-        if (hexCheckBox->isChecked()) {
+        if (isHex) {
             for (auto &line :lines) {
                 dataList << dataFromHex(line);
             }
@@ -1334,6 +1344,7 @@ void MainWindow::updateSendType() {
     if (_sendType == SendType::Line) {
         newController = new LineSerialController(serialController);
     }
+    serialController = newController;
 }
 
 
