@@ -104,17 +104,17 @@ void MainWindow::initUi() {
     auto *serialPortBaudRateLabel = new QLabel(tr("波特率"), this);
     serialPortBaudRateComboBox = new QComboBox(this);
     serialPortBaudRateComboBox->addItems(QStringList()
-                                                 << "1200"
-                                                 << "2400"
-                                                 << "4800"
-                                                 << "9600"
-                                                 << "19200"
-                                                 << "38400"
-                                                 << "25600"
-                                                 << "57600"
-                                                 << "115200"
-                                                 << "256000"
-    );
+                                         << "1200"
+                                         << "2400"
+                                         << "4800"
+                                         << "9600"
+                                         << "19200"
+                                         << "38400"
+                                         << "25600"
+                                         << "57600"
+                                         << "115200"
+                                         << "256000"
+                                         );
     serialPortBaudRateLabel->setBuddy(serialPortBaudRateComboBox);
 
     auto serialPortDataBitsLabel = new QLabel(tr("数据位"), this);
@@ -159,17 +159,17 @@ void MainWindow::initUi() {
     auto *secondSerialPortBaudRateLabel = new QLabel(tr("波特率"), this);
     secondSerialPortBaudRateComboBox = new QComboBox(this);
     secondSerialPortBaudRateComboBox->addItems(QStringList()
-                                                       << "1200"
-                                                       << "2400"
-                                                       << "4800"
-                                                       << "9600"
-                                                       << "19200"
-                                                       << "38400"
-                                                       << "25600"
-                                                       << "57600"
-                                                       << "115200"
-                                                       << "256000"
-    );
+                                               << "1200"
+                                               << "2400"
+                                               << "4800"
+                                               << "9600"
+                                               << "19200"
+                                               << "38400"
+                                               << "25600"
+                                               << "57600"
+                                               << "115200"
+                                               << "256000"
+                                               );
     secondSerialPortBaudRateLabel->setBuddy(secondSerialPortBaudRateComboBox);
 
     auto secondSerialPortDataBitsLabel = new QLabel(tr("数据位"), this);
@@ -627,25 +627,25 @@ void MainWindow::createConnect() {
 
     connect(readWriterButtonGroup, QOverload<QAbstractButton *, bool>::of(&QButtonGroup::buttonToggled),
             [=](QAbstractButton *button, bool checked) {
-                if (checked && isReadWriterOpen()) {
-                    SerialType serialType;
-                    if (button == tcpServerRadioButton) {
-                        serialType = SerialType::TcpServer;
-                    } else if (button == tcpClientRadioButton) {
-                        serialType = SerialType::TcpClient;
-                    } else if (button == bridgeRadioButton) {
-                        serialType = SerialType::Bridge;
-                    } else {
-                        serialType = SerialType::Normal;
-                    }
+        if (checked && isReadWriterOpen()) {
+            SerialType serialType;
+            if (button == tcpServerRadioButton) {
+                serialType = SerialType::TcpServer;
+            } else if (button == tcpClientRadioButton) {
+                serialType = SerialType::TcpClient;
+            } else if (button == bridgeRadioButton) {
+                serialType = SerialType::Bridge;
+            } else {
+                serialType = SerialType::Normal;
+            }
 
-                    if (serialType != _serialType) {
-                        if (showWarning("", tr("串口配置已经改变，是否重新打开串口？"))) {
-                            openReadWriter();
-                        }
-                    }
+            if (serialType != _serialType) {
+                if (showWarning("", tr("串口配置已经改变，是否重新打开串口？"))) {
+                    openReadWriter();
                 }
-            });
+            }
+        }
+    });
 
     connect(this, &MainWindow::serialStateChanged, [this](bool isOpen) {
         setOpenButtonText(isOpen);
@@ -734,21 +734,21 @@ void MainWindow::createConnect() {
 
     connect(lineReturnButtonGroup, QOverload<QAbstractButton *, bool>::of(&QButtonGroup::buttonToggled),
             [=](QAbstractButton *button, bool checked) {
-                if (checked) {
-                    if (button == sendRReturnLineButton) {
-                        lineReturn = QByteArray("\r");
-                    } else if (button == sendNReturnLineButton) {
-                        lineReturn = QByteArray("\n");
-                    } else {
-                        lineReturn = QByteArray("\r\n");
-                    }
-                }
-            });
+        if (checked) {
+            if (button == sendRReturnLineButton) {
+                lineReturn = QByteArray("\r");
+            } else if (button == sendNReturnLineButton) {
+                lineReturn = QByteArray("\n");
+            } else {
+                lineReturn = QByteArray("\r\n");
+            }
+        }
+    });
 
     connect(autoSendTimer, &QTimer::timeout,
             [this] {
-                sendNextData();
-            });
+        sendNextData();
+    });
     connect(hexCheckBox, &QCheckBox::stateChanged, [this] {
         this->_dirty = true;
     });
@@ -844,10 +844,10 @@ void MainWindow::displayReceiveData(const QByteArray &data) {
         s.append("[").append(getTimestamp()).append("] ");
     }
 
+    if (!s.isEmpty()) {
+        s.append(" ");
+    }
     if (displayReceiveDataAsHexCheckBox->isChecked()) {
-        if (!s.isEmpty()) {
-            s.append(" ");
-        }
         s.append(dataToHex(data));
     } else {
         s.append(QString::fromLocal8Bit(data));
@@ -1031,7 +1031,7 @@ void MainWindow::readSettings() {
     sendLineReturnCheckBox->setChecked(sendLineReturn);
 
     auto sendLineReturnType = LineReturn(
-            settings.value("send_line_return_type", static_cast<int >(LineReturn::RN)).toInt());
+                settings.value("send_line_return_type", static_cast<int >(LineReturn::RN)).toInt());
     if (sendLineReturnType == LineReturn::R) {
         sendRReturnLineButton->setChecked(true);
     } else if (sendLineReturnType == LineReturn::N) {
@@ -1041,12 +1041,55 @@ void MainWindow::readSettings() {
     }
 
     settings.beginGroup("TcpSettings");
+    auto ipList = getNetworkInterfaces();
+    auto ipAddress = settings.value("tcp_address","").toString();
+    QString selectAddress ="";
+    if (!ipAddress.isEmpty() && !ipList.isEmpty()){
+        auto found = false;
+        for (auto ip:ipList) {
+            if (getIpAddress(ip) == ipAddress) {
+                selectAddress = ipAddress;
+                found=true;
+                break;
+            }
+        }
+        if (!found) {
+            selectAddress = getIpAddress(ipList.first());
+        }
+    }
+    if (selectAddress.isEmpty()) {
+        if (!ipList.isEmpty()) {
+            do {
+                for (auto ip:ipList){
+                    if (ip.type() == QNetworkInterface::Wifi && !getIpAddress(ip).isEmpty()){
+                        selectAddress = getIpAddress(ip);
+                        break;
+                    }
+                }
+                if (!selectAddress.isEmpty()) {
+                    break;
+                }
+                for (auto ip:ipList) {
+                    if (ip.type() == QNetworkInterface::Ethernet && !getIpAddress(ip).isEmpty()){
+                        selectAddress = getIpAddress(ip);
+                    }
+                }
+                if (!selectAddress.isEmpty()){
+                    break;
+                }
+
+                selectAddress = getIpAddress(ipList.first());
+
+            }while(false);
+        }
+    }
+
+    tcpAddressLineEdit->setText(selectAddress);
+
     auto tcpPort = settings.value("tcp_port").toInt();
     tcpPortLineEdit->setText(QString::number(tcpPort));
 
     sendTextEdit->setText(sendText);
-
-    tcpAddressLineEdit->setText(getIp());
 
     settings.beginGroup("RunConfig");
     auto lastDir = settings.value("last_dir", "").toString();
@@ -1130,6 +1173,7 @@ void MainWindow::writeSettings() {
     settings.setValue("send_line_return_type", static_cast<int >(sendLineReturn));
 
     settings.beginGroup("TcpSettings");
+    settings.setValue("tcp_address", tcpAddressLineEdit->text());
     settings.setValue("tcp_port", tcpPortLineEdit->text().toInt());
 
     settings.beginGroup("RunConfig");
@@ -1346,10 +1390,3 @@ void MainWindow::updateSendType() {
     }
     serialController = newController;
 }
-
-
-
-
-
-
-

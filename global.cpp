@@ -8,20 +8,21 @@
 #include <QtWidgets/QWidget>
 #include <QtWidgets/QMessageBox>
 #include <QtNetwork/QHostInfo>
+#include <QtNetwork/QNetworkInterface>
 #include "global.h"
 
 QTextCodec *gbk = QTextCodec::codecForName("GB18030");
 QTextCodec *utf8 = QTextCodec::codecForName("UTF-8");
 
 QString utf82Gbk(const QString &inStr) {
-//    QTextCodec *utf8 = QTextCodec::codecForName("UTF-8");
+    //    QTextCodec *utf8 = QTextCodec::codecForName("UTF-8");
 
-//    gbk->fromUnicode(utf8->toUnicode(inStr.toLatin1()));
+    //    gbk->fromUnicode(utf8->toUnicode(inStr.toLatin1()));
 
     return QString(gbk->fromUnicode(inStr));
 
-//    QString utf2gbk = gbk->toUnicode(inStr.toLocal8Bit());
-//    return utf2gbk;
+    //    QString utf2gbk = gbk->toUnicode(inStr.toLocal8Bit());
+    //    return utf2gbk;
 }
 //
 //QString gbk2Utf8(const QString &inStr) {
@@ -89,9 +90,23 @@ QString getFileDir(const QString &filePath) {
 }
 
 QString getIp() {
+    auto interfaces = QNetworkInterface::allInterfaces();
+
+    for (auto interface:interfaces){
+        qDebug() << "interface name:" << interface.name();
+        qDebug() << "interface address:" << interface.hardwareAddress();
+        qDebug() << "interface type:" << interface.type();
+        auto entries = interface.addressEntries();
+
+        for (auto entry:entries){
+            qDebug() << "entry ip address:" << entry.ip().toString();
+        }
+    }
+
     auto localHostName = QHostInfo::localHostName();
     qDebug() << "local host name:" << localHostName;
     auto ipAddress = QHostInfo::fromName(localHostName).addresses();
+    qDebug() << "ip address count:" << ipAddress.length();
     qDebug() << "ip address:" << ipAddress;
 
     for (auto address:ipAddress) {
@@ -126,4 +141,31 @@ QByteArray dataFromHex(const QString &hex) {
     line.replace(' ', QByteArray());
     auto result = QByteArray::fromHex(line);
     return result;
+}
+
+QString getIpAddress(const QNetworkInterface &interface){
+    for (auto address:interface.addressEntries()) {
+        if (address.ip().protocol() == QAbstractSocket::IPv4Protocol && !address.ip().toString().startsWith("169.")){
+            return  address.ip().toString();
+        }
+    }
+    return  "";
+}
+
+QList<QNetworkInterface> getNetworkInterfaces() {
+    QList<QNetworkInterface> list;
+    auto interfaces = QNetworkInterface::allInterfaces();
+    for (auto interface:interfaces){
+        if (interface.isValid() && (interface.type() == QNetworkInterface::Wifi|| interface.type() == QNetworkInterface::Ethernet)) {
+            qDebug() << "interface " <<interface.type() << interface.name() << interface.hardwareAddress();
+            auto entries = interface.addressEntries();
+            for (auto entry:entries){
+                if (entry.ip().protocol()== QAbstractSocket::IPv4Protocol) {
+                    qDebug() << "interface ip:" << entry.ip().toString();
+                }
+            }
+            list.append(interface);
+        }
+    }
+    return  list;
 }

@@ -7,6 +7,7 @@
 
 #include <QString>
 #include <QWidget>
+#include <QtNetwork/QNetworkInterface>
 
 extern QString utf82Gbk(const QString &inStr);
 
@@ -36,6 +37,10 @@ extern QString getFileSuffix(const QString &filePath);
 extern QString getFileDir(const QString &filePath);
 
 extern QString getIp();
+
+extern QString getIpAddress(const QNetworkInterface &interface);
+
+extern QList<QNetworkInterface> getNetworkInterfaces();
 
 extern QByteArray dataToHex(const QByteArray &data);
 
