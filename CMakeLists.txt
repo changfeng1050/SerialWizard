@@ -50,7 +50,13 @@ set(SOURCE_FILES
         serial/LineSerialController.h
         data/TcpClientReadWriter.cpp
         data/TcpClientReadWriter.h
-        data/SerialBridgeReadWriter.cpp data/SerialBridgeReadWriter.h)
+        data/SerialBridgeReadWriter.cpp
+        data/SerialBridgeReadWriter.h
+        DataProcessDialog.cpp
+        DataProcessDialog.h
+        utils/FileUtil.cpp
+        utils/FileUtil.h
+        )
 
 #add_executable(SerialWizard ${SOURCE_FILES})
 add_executable(SerialWizard WIN32 ${SOURCE_FILES})

@@ -21,7 +21,6 @@ extern QByteArray toUtf8ByteArray(const QString &text);
 
 extern QString getTimestamp();
 
-
 extern bool okToContinue(const QString &title, const QString &text, QWidget *parent = nullptr);
 
 extern bool showQuestion(const QString &title, const QString &text, QWidget *parent = nullptr);
@@ -46,5 +45,6 @@ extern QByteArray dataToHex(const QByteArray &data);
 
 extern QByteArray dataFromHex(const QString &data);
 
+extern QStringList getLines(const QString &text);
 
 #endif //SERIALWIZARD_GLOBAL_H

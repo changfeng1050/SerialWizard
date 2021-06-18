@@ -72,33 +72,23 @@ bool showWarning(const QString &title, const QString &text, QWidget *parent) {
 
 void showMessage(const QString &title, const QString &text, QWidget *parent) {
     return (void) QMessageBox::information(parent, title, text);
-};
+}
 
 QString getTimestamp() {
     auto time = QTime(QTime::currentTime());
     return time.toString("hh:mm:ss.zzz");
 }
 
-QString getFileSuffix(const QString &filePath) {
-    auto index = filePath.lastIndexOf('.');
-    return filePath.right(filePath.count() - index - 1);
-}
-
-QString getFileDir(const QString &filePath) {
-    auto index = filePath.lastIndexOf('.');
-    return filePath.left(index + 1);
-}
-
 QString getIp() {
     auto interfaces = QNetworkInterface::allInterfaces();
 
-    for (auto interface:interfaces){
+    for (const auto &interface:interfaces) {
         qDebug() << "interface name:" << interface.name();
         qDebug() << "interface address:" << interface.hardwareAddress();
         qDebug() << "interface type:" << interface.type();
         auto entries = interface.addressEntries();
 
-        for (auto entry:entries){
+        for (const auto &entry:entries) {
             qDebug() << "entry ip address:" << entry.ip().toString();
         }
     }
@@ -109,12 +99,12 @@ QString getIp() {
     qDebug() << "ip address count:" << ipAddress.length();
     qDebug() << "ip address:" << ipAddress;
 
-    for (auto address:ipAddress) {
+    for (const auto &address:ipAddress) {
         if (address.protocol() == QAbstractSocket::IPv4Protocol) {
             return address.toString();
         }
     }
-    for (auto address:ipAddress) {
+    for (const auto &address:ipAddress) {
         if (address.protocol() == QAbstractSocket::IPv6Protocol) {
             return address.toString();
         }
@@ -137,35 +127,66 @@ QByteArray dataToHex(const QByteArray &data) {
 }
 
 QByteArray dataFromHex(const QString &hex) {
-    QByteArray line = hex.toLatin1();
+    QRegExp rx("(([0-9a-fA-F]{2}\\s?)+)");
+    rx.indexIn(hex.simplified());
+    QStringList list;
+    int pos = 0;
+    while ((pos = rx.indexIn(hex, pos)) != -1) {
+        list << rx.cap(1);
+        pos += rx.matchedLength();
+    }
+
+    QString m;
+    // 查找最匹配的
+    for (const auto &text:list) {
+        qDebug() << "dataFromHex: text:" << text << endl;
+        if (text.count() > m.count()) {
+            m = text;
+        }
+    }
+    auto result1 = m.trimmed();
+    qDebug() << "dataFromHex" << hex << ">>" << result1 << endl;
+    QByteArray line = result1.toLatin1();
     line.replace(' ', QByteArray());
     auto result = QByteArray::fromHex(line);
     return result;
 }
 
-QString getIpAddress(const QNetworkInterface &interface){
-    for (auto address:interface.addressEntries()) {
-        if (address.ip().protocol() == QAbstractSocket::IPv4Protocol && !address.ip().toString().startsWith("169.")){
-            return  address.ip().toString();
+QString getIpAddress(const QNetworkInterface &interface) {
+    for (const auto &address:interface.addressEntries()) {
+        if (address.ip().protocol() == QAbstractSocket::IPv4Protocol && !address.ip().toString().startsWith("169.")) {
+            return address.ip().toString();
         }
     }
-    return  "";
+    return "";
 }
 
 QList<QNetworkInterface> getNetworkInterfaces() {
     QList<QNetworkInterface> list;
     auto interfaces = QNetworkInterface::allInterfaces();
-    for (auto interface:interfaces){
-        if (interface.isValid() && (interface.type() == QNetworkInterface::Wifi|| interface.type() == QNetworkInterface::Ethernet)) {
-            qDebug() << "interface " <<interface.type() << interface.name() << interface.hardwareAddress();
+    for (const auto &interface:interfaces) {
+        if (interface.isValid() &&
+            (interface.type() == QNetworkInterface::Wifi || interface.type() == QNetworkInterface::Ethernet)) {
+            qDebug() << "interface " << interface.type() << interface.name() << interface.hardwareAddress();
             auto entries = interface.addressEntries();
-            for (auto entry:entries){
-                if (entry.ip().protocol()== QAbstractSocket::IPv4Protocol) {
+            for (const auto &entry:entries) {
+                if (entry.ip().protocol() == QAbstractSocket::IPv4Protocol) {
                     qDebug() << "interface ip:" << entry.ip().toString();
                 }
             }
             list.append(interface);
         }
     }
-    return  list;
+    return list;
 }
+
+QStringList getLines(const QString &text) {
+    QString t = text;
+    QTextStream in(&t);
+    QStringList lines;
+    while (!in.atEnd()) {
+        lines << in.readLine();
+    }
+    return lines;
+}
+

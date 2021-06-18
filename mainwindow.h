@@ -62,6 +62,8 @@ public:
 
     void initUi();
 
+    void setAcceptWindowDrops();
+
     void createConnect();
 
     void createStatusBar();
@@ -71,8 +73,10 @@ public:
     enum class SendType {
         Line
     };
+protected:
+    void dropEvent(QDropEvent *event) override;
 
-public:
+    void dragEnterEvent(QDragEnterEvent *event) override;
 
 signals:
 
@@ -106,11 +110,11 @@ public slots:
 
     void save();
 
-    void tool();
-
     void openDataValidator();
 
     void openConvertDataDialog();
+
+    void openDataProcessDialog(const QString &text);
 
     void clearReceivedData();
 
@@ -172,95 +176,98 @@ private:
 
     void showSendData(const QByteArray &data);
 
-    QStringList getSerialNameList();
+    static QStringList getSerialNameList();
 
     RunConfig *runConfig{nullptr};
 
     //状态栏
-    QLabel *statusBarReadBytesLabel;
-    QLabel *statusBarWriteBytesLabel;
-    QPushButton *statusBarResetCountButton;
+    QLabel *statusBarReadBytesLabel{nullptr};
+    QLabel *statusBarWriteBytesLabel{nullptr};
+    QPushButton *statusBarResetCountButton{nullptr};
 
-    QMenu *fileMenu;
-    QMenu *editMenu;
-    QMenu *toolMenu;
-    QMenu *helpMenu;
+    QMenu *fileMenu{nullptr};
+    QMenu *editMenu{nullptr};
+    QMenu *toolMenu{nullptr};
+    QMenu *helpMenu{nullptr};
 
-    QAction *openAct;
-    QAction *saveAct;
-    QAction *exitAct;
-    QAction *validateDataAct;
-    QAction *convertDataAct;
+    QAction *openAct{nullptr};
+    QAction *saveAct{nullptr};
+    QAction *exitAct{nullptr};
+    QAction *validateDataAct{nullptr};
+    QAction *convertDataAct{nullptr};
+    QAction *dataProcessAct{nullptr};
 
     AbstractReadWriter *_readWriter{nullptr};
 
     qint64 sendCount{0};
     qint64 receiveCount{0};
 
-    QRadioButton *serialRadioButton;
-    QRadioButton *tcpServerRadioButton;
-    QRadioButton *tcpClientRadioButton;
-    QRadioButton *bridgeRadioButton;
-    QRadioButton *serialBridgeRadioButton;
+    QRadioButton *serialRadioButton{nullptr};
+    QRadioButton *tcpServerRadioButton{nullptr};
+    QRadioButton *tcpClientRadioButton{nullptr};
+    QRadioButton *bridgeRadioButton{nullptr};
+    QRadioButton *serialBridgeRadioButton{nullptr};
 
-    QButtonGroup *readWriterButtonGroup;
+    QButtonGroup *readWriterButtonGroup{nullptr};
 
     // 串口设置
-    QComboBox *serialPortNameComboBox;
-    QComboBox *serialPortBaudRateComboBox;
-    QComboBox *serialPortParityComboBox;
-    QComboBox *serialPortDataBitsComboBox;
-    QComboBox *serialPortStopBitsComboBox;
-    QPushButton *openSerialButton;
-    QPushButton *refreshSerialButton;
+    QComboBox *serialPortNameComboBox{nullptr};
+    QComboBox *serialPortBaudRateComboBox{nullptr};
+    QComboBox *serialPortParityComboBox{nullptr};
+    QComboBox *serialPortDataBitsComboBox{nullptr};
+    QComboBox *serialPortStopBitsComboBox{nullptr};
+    QPushButton *openSerialButton{nullptr};
+    QPushButton *refreshSerialButton{nullptr};
 
     // 第二串口设置
-    QComboBox *secondSerialPortNameComboBox;
-    QComboBox *secondSerialPortBaudRateComboBox;
-    QComboBox *secondSerialPortParityComboBox;
-    QComboBox *secondSerialPortDataBitsComboBox;
-    QComboBox *secondSerialPortStopBitsComboBox;
+    QComboBox *secondSerialPortNameComboBox{nullptr};
+    QComboBox *secondSerialPortBaudRateComboBox{nullptr};
+    QComboBox *secondSerialPortParityComboBox{nullptr};
+    QComboBox *secondSerialPortDataBitsComboBox{nullptr};
+    QComboBox *secondSerialPortStopBitsComboBox{nullptr};
 
     // TCP设置
-    QLineEdit *tcpAddressLineEdit;
-    QLineEdit *tcpPortLineEdit;
-    QLabel *tcpClientLabel;
+    QLineEdit *tcpAddressLineEdit{nullptr};
+    QLineEdit *tcpPortLineEdit{nullptr};
+    QLabel *tcpClientLabel{nullptr};
 
     // 接收设置
-    QCheckBox *addLineReturnCheckBox;
-    QCheckBox *displayReceiveDataAsHexCheckBox;
-    QCheckBox *pauseReceiveCheckBox;
-    QPushButton *saveReceiveDataButton;
-    QPushButton *clearReceiveDataButton;
-    QCheckBox *addReceiveTimestampCheckBox;
+    QCheckBox *addLineReturnCheckBox{nullptr};
+    QCheckBox *displayReceiveDataAsHexCheckBox{nullptr};
+    QCheckBox *pauseReceiveCheckBox{nullptr};
+    QPushButton *saveReceiveDataButton{nullptr};
+    QPushButton *clearReceiveDataButton{nullptr};
+    QCheckBox *addReceiveTimestampCheckBox{nullptr};
 
     // 发送设置
-    QCheckBox *hexCheckBox;
-    QCheckBox *displaySendDataCheckBox;
-    QCheckBox *displaySendDataAsHexCheckBox;
-    QCheckBox *autoSendCheckBox;
-    QLineEdit *sendIntervalLineEdit;
-    QLineEdit *emptyLineDelayLindEdit;
-    QPushButton *saveSentDataButton;
-    QPushButton *clearSentDataButton;
+    QCheckBox *hexCheckBox{nullptr};
+    QCheckBox *displaySendDataCheckBox{nullptr};
+    QCheckBox *displaySendDataAsHexCheckBox{nullptr};
+    QCheckBox *autoSendCheckBox{nullptr};
+    QLineEdit *sendIntervalLineEdit{nullptr};
+    QLineEdit *emptyLineDelayLindEdit{nullptr};
+    QPushButton *saveSentDataButton{nullptr};
+    QPushButton *clearSentDataButton{nullptr};
 
-    QCheckBox *loopSendCheckBox;
-    QPushButton *resetLoopSendButton;
-    QLineEdit *currentSendCountLineEdit;
-    QLabel *totalSendCountLabel;
+    QCheckBox *loopSendCheckBox{nullptr};
+    QPushButton *resetLoopSendButton{nullptr};
+    QLineEdit *currentSendCountLineEdit{nullptr};
+    QLabel *totalSendCountLabel{nullptr};
 
-    QTextBrowser *receiveDataBrowser;
-    QTextBrowser *sendDataBrowser;
+    QTextBrowser *receiveDataBrowser{nullptr};
+    QTextBrowser *sendDataBrowser{nullptr};
 
-    QTextEdit *sendTextEdit;
+    QTextEdit *sendTextEdit{nullptr};
 
-    QPushButton *sendLineButton;
-    QCheckBox *sendLineReturnCheckBox;
-    QRadioButton *sendRNLineReturnButton;
-    QRadioButton *sendRReturnLineButton;
-    QRadioButton *sendNReturnLineButton;
+    QPushButton *sendLineButton{nullptr};
+    QPushButton *processTextButton{nullptr};
+    QPushButton *clearTextButton{nullptr};
+    QCheckBox *sendLineReturnCheckBox{nullptr};
+    QRadioButton *sendRNLineReturnButton{nullptr};
+    QRadioButton *sendRReturnLineButton{nullptr};
+    QRadioButton *sendNReturnLineButton{nullptr};
 
-    QButtonGroup *lineReturnButtonGroup;
+    QButtonGroup *lineReturnButtonGroup{nullptr};
 
     AutoSendState autoSendState{AutoSendState::NotStart};
 

@@ -5,7 +5,6 @@
 #ifndef SERIALWIZARD_CALCULATECHECKSUMDIALOG_H
 #define SERIALWIZARD_CALCULATECHECKSUMDIALOG_H
 
-
 #include <QtWidgets/QDialog>
 
 class QLineEdit;
@@ -25,7 +24,6 @@ Q_OBJECT
 public:
     explicit ConvertDataDialog(QWidget *parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags());
 
-
 private:
     void createUi();
 
@@ -44,6 +42,5 @@ private:
     QPushButton *parseButton;
     QPushButton *convertButton;
 };
-
 
 #endif //SERIALWIZARD_CALCULATECHECKSUMDIALOG_H

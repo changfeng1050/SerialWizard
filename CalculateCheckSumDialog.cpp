@@ -12,7 +12,6 @@
 
 
 CalculateCheckSumDialog::CalculateCheckSumDialog(QWidget *parent, Qt::WindowFlags f) : QDialog(parent, f) {
-
     createUi();
     createConnect();
 }

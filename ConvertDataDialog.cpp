@@ -19,8 +19,7 @@
 const QString GBK = "GBK";
 const QString UTF8 = "UTF8";
 
-ConvertDataDialog::ConvertDataDialog(QWidget *parent, Qt::WindowFlags f) {
-
+ConvertDataDialog::ConvertDataDialog(QWidget *parent, Qt::WindowFlags f) : QDialog(parent, f) {
     createUi();
     createConnect();
 }
@@ -166,6 +165,5 @@ void ConvertDataDialog::createConnect() {
             }
             resultTextEdit->setText(resultText);
         }
-
     });
 }
