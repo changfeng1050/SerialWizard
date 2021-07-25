@@ -376,6 +376,13 @@ void DataProcessDialog::createUi() {
     auto lineIndexGroup = new QGroupBox(tr("高级行处理"), this);
     lineIndexGroup->setLayout(lineIndexLayout);
 
+    cancelButton = new QPushButton(tr("取消"), this);
+    saveButton = new QPushButton(tr("保存"), this);
+    auto operationLayout = new QHBoxLayout;
+    operationLayout->addStretch();
+    operationLayout->addWidget(cancelButton);
+    operationLayout->addWidget(saveButton);
+
     auto layout = new QVBoxLayout();
     layout->addWidget(textEdit);
     layout->addLayout(simplifiedLayout);
@@ -385,6 +392,7 @@ void DataProcessDialog::createUi() {
     layout->addWidget(frameGroupBox);
     layout->addWidget(deleteLineGroupBox);
     layout->addWidget(lineIndexGroup);
+    layout->addLayout(operationLayout);
     setLayout(layout);
     setWindowTitle(tr("数据处理"));
 }
@@ -491,66 +499,52 @@ void DataProcessDialog::createConnect() {
     connect(keepMatchLineButton, &QPushButton::clicked, [this] {
         processText2(keepMatchIndexLine);
     });
+
+    connect(cancelButton, &QPushButton::clicked, [this] {
+        if (showQuestion("", tr("保存到发送框"))) {
+            accept();
+        } else {
+            reject();
+        }
+    });
+
+    connect(saveButton, &QPushButton::clicked, [this] {
+        accept();
+    });
 }
 
 void DataProcessDialog::processText(QString (*p)(DataProcessDialog *, const QString &)
 
 ) {
     auto text = textEdit->toPlainText();
-    if (text.
-
-            isEmpty()
-
-            ) {
-        return;
-    }
+    if (text.isEmpty()) return;
     QString t = text;
     QTextStream in(&t);
     QStringList lines;
-    while (!in.
-
-            atEnd()
-
-            ) {
+    while (!in.atEnd()) {
         auto line = in.readLine();
         line = p(this, line);
-        lines.
-                append(line);
+        lines.append(line);
     }
-    textEdit->
-            setPlainText(lines
-                                 .join("\n"));
+    textEdit->setPlainText(lines.join("\n"));
 }
 
 void DataProcessDialog::processText2(bool (*p)(DataProcessDialog *, const QString &)
 
 ) {
     auto text = textEdit->toPlainText();
-    if (text.
-
-            isEmpty()
-
-            ) {
+    if (text.isEmpty()) {
         return;
     }
     QString t = text;
     QTextStream in(&t);
     QStringList lines;
-    while (!in.
-
-            atEnd()
-
-            ) {
+    while (!in.atEnd()) {
         auto line = in.readLine();
         auto needDelete = p(this, line);
-        if (!needDelete) {
-            lines.
-                    append(line);
-        }
+        if (!needDelete) lines.append(line);
     }
-    textEdit->
-            setPlainText(lines
-                                 .join("\n"));
+    textEdit->setPlainText(lines.join("\n"));
 }
 
 QString DataProcessDialog::matchText() {

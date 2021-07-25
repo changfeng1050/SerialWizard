@@ -42,5 +42,14 @@ int SerialController::getTotalCount() {
     return _dataList.count();
 }
 
+void SerialController::decreaseCurrentCount() {
+    if (_currentCount > 0) {
+        _currentCount--;
+    }
+}
+
+void SerialController::increaseCurrentCount() {
+    _currentCount++;
+}
 
 

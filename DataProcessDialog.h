@@ -134,6 +134,10 @@ private:
     QList<QLineEdit *> matchLineEditList;
     QPushButton *deleteMatchLineButton{nullptr};
     QPushButton *keepMatchLineButton{nullptr};
+
+    QPushButton *saveButton{nullptr};
+    QPushButton *cancelButton{nullptr};
+
 };
 
 #endif //SERIALWIZARD_DATAPROCESSDIALOG_H

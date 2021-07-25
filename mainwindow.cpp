@@ -321,6 +321,10 @@ void MainWindow::initUi() {
     currentSendCountLabel->setBuddy(currentSendCountLineEdit);
     auto divideLabel = new QLabel(tr("/"), this);
     totalSendCountLabel = new QLabel(tr("0"), this);
+    previousButton = new QPushButton(tr("⯇"), this);
+    previousButton->setMaximumWidth(50);
+    nextButton = new QPushButton(tr("⯈"), this);
+    nextButton->setMaximumWidth(50);
 
     auto loopLayout1 = new QHBoxLayout;
     loopLayout1->addWidget(loopSendCheckBox);
@@ -332,6 +336,8 @@ void MainWindow::initUi() {
     sendCountLayout->addWidget(currentSendCountLineEdit);
     sendCountLayout->addWidget(divideLabel);
     sendCountLayout->addWidget(totalSendCountLabel);
+    sendCountLayout->addWidget(previousButton);
+    sendCountLayout->addWidget(nextButton);
 
     auto loopSendLayout = new QVBoxLayout;
     loopSendLayout->addLayout(loopLayout1);
@@ -359,7 +365,7 @@ void MainWindow::initUi() {
 
     auto processTextLayout = new QHBoxLayout;
     processTextButton = new QPushButton(tr("数据处理"), this);
-    clearTextButton = new QPushButton(tr("清空"),this);
+    clearTextButton = new QPushButton(tr("清空"), this);
     processTextLayout->addWidget(processTextButton);
     processTextLayout->addWidget(clearTextButton);
 
@@ -437,7 +443,6 @@ void MainWindow::initUi() {
 
     widget->setLayout(mainLayout);
     setCentralWidget(widget);
-
 }
 
 void MainWindow::setAcceptWindowDrops() {
@@ -451,13 +456,18 @@ void MainWindow::createStatusBar() {
 
     auto receiveByteCountLabel = new QLabel(tr("接收:"), this);
     statusBarReadBytesLabel = new QLabel(this);
-    statusBarReadBytesLabel->setMinimumWidth(100);
+    statusBarReadBytesLabel->setMinimumWidth(50);
     statusBarReadBytesLabel->setText("0");
 
     auto sendByteCountLabel = new QLabel(tr("发送:"), this);
     statusBarWriteBytesLabel = new QLabel(this);
-    statusBarWriteBytesLabel->setMinimumWidth(100);
+    statusBarWriteBytesLabel->setMinimumWidth(50);
     statusBarWriteBytesLabel->setText("0");
+
+    auto sendLineCountLabel = new QLabel(tr("发送行数:"), this);
+    statusBarSendLinesLabel = new QLabel(this);
+    statusBarSendLinesLabel->setMinimumWidth(50);
+    statusBarSendLinesLabel->setText("0");
 
     statusBarResetCountButton = new QPushButton(tr("重置计数"), this);
 
@@ -465,13 +475,17 @@ void MainWindow::createStatusBar() {
     statusBar()->addPermanentWidget(statusBarReadBytesLabel);
     statusBar()->addPermanentWidget(sendByteCountLabel);
     statusBar()->addPermanentWidget(statusBarWriteBytesLabel);
+    statusBar()->addPermanentWidget(sendLineCountLabel);
+    statusBar()->addPermanentWidget(statusBarSendLinesLabel);
     statusBar()->addPermanentWidget(statusBarResetCountButton);
 
     connect(statusBarResetCountButton, &QPushButton::clicked, [this] {
         receiveCount = 0;
         sendCount = 0;
+        totalSendLineCount = 0;
         emit writeBytesChanged(sendCount);
         emit readBytesChanged(receiveCount);
+        emit writeLinesChanged(totalSendLineCount);
     });
 }
 
@@ -627,9 +641,7 @@ void MainWindow::openReadWriter() {
 
         _readWriter = readWriter;
     }
-    connect(_readWriter, &AbstractReadWriter::readyRead,
-            this, &MainWindow::readData);
-
+    connect(_readWriter, &AbstractReadWriter::readyRead, this, &MainWindow::readData);
 
     emit serialStateChanged(result);
 }
@@ -682,6 +694,7 @@ void MainWindow::createConnect() {
 
     connect(this, &MainWindow::readBytesChanged, this, &MainWindow::updateReadBytes);
     connect(this, &MainWindow::writeBytesChanged, this, &MainWindow::updateWriteBytes);
+    connect(this, &MainWindow::writeLinesChanged, this, &MainWindow::updateWriteLines);
     connect(this, &MainWindow::currentWriteCountChanged, this, &MainWindow::updateCurrentWriteCount);
 
     connect(openSerialButton, &QPushButton::clicked, [=](bool value) {
@@ -715,6 +728,16 @@ void MainWindow::createConnect() {
         skipSendCount = 0;
         serialController->setCurrentCount(0);
         emit currentWriteCountChanged(0);
+    });
+
+    connect(previousButton, &QPushButton::clicked, [this] {
+        serialController->decreaseCurrentCount();
+        updateCurrentWriteCount(serialController->getCurrentCount());
+    });
+
+    connect(nextButton, &QPushButton::clicked, [this] {
+        serialController->increaseCurrentCount();
+        updateCurrentWriteCount(serialController->getCurrentCount());
     });
 
     connect(currentSendCountLineEdit, &QLineEdit::editingFinished, [this] {
@@ -757,8 +780,8 @@ void MainWindow::createConnect() {
         openDataProcessDialog(sendTextEdit->toPlainText());
     });
 
-    connect(clearTextButton, &QPushButton::clicked, [this]{
-       sendTextEdit->clear();
+    connect(clearTextButton, &QPushButton::clicked, [this] {
+        sendTextEdit->clear();
     });
 
     connect(lineReturnButtonGroup, QOverload<QAbstractButton *, bool>::of(&QButtonGroup::buttonToggled),
@@ -980,7 +1003,7 @@ void MainWindow::updateSendData(bool isHex, const QString &text) {
             }
         }
         serialController->setData(dataList);
-        totalSendCount = serialController->getTotalCount();
+        auto totalSendCount = serialController->getTotalCount();
         updateTotalSendCount(totalSendCount);
     }
 }
@@ -1132,6 +1155,7 @@ void MainWindow::readSettings() {
     tcpPortLineEdit->setText(QString::number(tcpPort));
 
     sendTextEdit->setText(sendText);
+    updateTotalSendCount(getLines(sendText).count());
 
     settings.beginGroup("RunConfig");
     auto lastDir = settings.value("last_dir", "").toString();
@@ -1315,6 +1339,8 @@ qint64 MainWindow::writeData(const QByteArray &data) {
         displaySentData(data);
         sendCount += count;
         emit writeBytesChanged(sendCount);
+        totalSendLineCount++;
+        emit writeLinesChanged(totalSendLineCount);
         return count;
     }
     return 0;
@@ -1352,6 +1378,10 @@ void MainWindow::updateReadBytes(qint64 bytes) {
 
 void MainWindow::updateWriteBytes(qint64 bytes) {
     statusBarWriteBytesLabel->setText(QString::number(bytes));
+}
+
+void MainWindow::updateWriteLines(qint64 lines) {
+    statusBarSendLinesLabel->setText(QString::number(lines));
 }
 
 void MainWindow::stopAutoSend() {
@@ -1406,6 +1436,8 @@ void MainWindow::showSendData(const QByteArray &data) {
         displaySentData(data);
         sendCount += data.count();
         emit writeBytesChanged(sendCount);
+        totalSendLineCount++;
+        emit writeLinesChanged(totalSendLineCount);
     }
 }
 

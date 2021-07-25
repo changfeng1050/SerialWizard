@@ -28,6 +28,10 @@ public:
 
     void setCurrentCount(int count);
 
+    void increaseCurrentCount();
+
+    void decreaseCurrentCount();
+
     bool readEnd();
 
     virtual MainWindow::SendType sendType() = 0;

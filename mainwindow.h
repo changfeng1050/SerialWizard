@@ -86,6 +86,8 @@ signals:
 
     void readBytesChanged(qint64 bytes);
 
+    void writeLinesChanged(qint64 lines);
+
     void currentWriteCountChanged(qint64 count);
 
 public slots:
@@ -131,6 +133,8 @@ public slots:
     void updateReadBytes(qint64 bytes);
 
     void updateWriteBytes(qint64 bytes);
+
+    void updateWriteLines(qint64 lines);
 
     void updateCurrentWriteCount(qint64 count);
 
@@ -181,6 +185,7 @@ private:
     RunConfig *runConfig{nullptr};
 
     //状态栏
+    QLabel *statusBarSendLinesLabel{nullptr};
     QLabel *statusBarReadBytesLabel{nullptr};
     QLabel *statusBarWriteBytesLabel{nullptr};
     QPushButton *statusBarResetCountButton{nullptr};
@@ -201,6 +206,7 @@ private:
 
     qint64 sendCount{0};
     qint64 receiveCount{0};
+    qint64 totalSendLineCount{0};
 
     QRadioButton *serialRadioButton{nullptr};
     QRadioButton *tcpServerRadioButton{nullptr};
@@ -253,6 +259,8 @@ private:
     QPushButton *resetLoopSendButton{nullptr};
     QLineEdit *currentSendCountLineEdit{nullptr};
     QLabel *totalSendCountLabel{nullptr};
+    QPushButton *previousButton{nullptr};
+    QPushButton *nextButton{nullptr};
 
     QTextBrowser *receiveDataBrowser{nullptr};
     QTextBrowser *sendDataBrowser{nullptr};
@@ -274,8 +282,6 @@ private:
     QTimer *autoSendTimer{nullptr};
 
     SerialController *serialController{nullptr};
-
-    int totalSendCount{0};
 
     bool _loopSend{false};
 
