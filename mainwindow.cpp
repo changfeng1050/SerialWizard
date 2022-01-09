@@ -1109,6 +1109,7 @@ void MainWindow::readSettings() {
     settings.beginGroup("TcpSettings");
     auto ipList = getNetworkInterfaces();
     auto ipAddress = settings.value("tcp_address", "").toString();
+    qDebug() << "last tcp address:" << ipAddress;
     QString selectAddress = "";
     if (!ipAddress.isEmpty() && !ipList.isEmpty()) {
         auto found = false;
@@ -1118,9 +1119,6 @@ void MainWindow::readSettings() {
                 found = true;
                 break;
             }
-        }
-        if (!found) {
-            selectAddress = getIpAddress(ipList.first());
         }
     }
     if (selectAddress.isEmpty()) {
