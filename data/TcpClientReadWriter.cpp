@@ -25,7 +25,7 @@ bool TcpClientReadWriter::open() {
             [](QAbstractSocket::SocketError error) {
                 qDebug() << "error" << error;
             });
-    _tcpSocket->connectToHost(_address, static_cast<quint16>(_port));
+    _tcpSocket->connectToHost(_address, _port);
     auto connected = _tcpSocket->waitForConnected();
     return _tcpSocket->isOpen() && connected;
 }
@@ -48,7 +48,7 @@ QByteArray TcpClientReadWriter::readAll() {
         return _tcpSocket->readAll();
     }
     qDebug() << "TcpClientReadWriter readAll() _tcpSocket == nullptr or not open";
-    return QByteArray();
+    return {};
 }
 
 qint64 TcpClientReadWriter::write(const QByteArray &byteArray) const {

@@ -42,6 +42,59 @@
 #include "ConvertDataDialog.h"
 #include "DataProcessDialog.h"
 
+QList<QNetworkInterface> getProperIpList() {
+    auto ipList = getNetworkInterfaces();
+    QList<QNetworkInterface> list;
+    for (auto &ip: ipList) {
+        if (ip.type() == QNetworkInterface::Wifi || ip.type() == QNetworkInterface::Ethernet) {
+            auto address = getIpAddress(ip);
+            if (!address.isEmpty() && !address.startsWith("169.254")) {
+                list << ip;
+            }
+        }
+    }
+    return list;
+}
+
+QString getProperIp(const QString &currentAddress) {
+    auto ipList = getProperIpList();
+    qDebug() << "last tcp address:" << currentAddress;
+    QString selectAddress = "";
+    if (!currentAddress.isEmpty() && !ipList.isEmpty()) {
+        for (const auto &ip: ipList) {
+            if (getIpAddress(ip) == currentAddress) {
+                selectAddress = currentAddress;
+                break;
+            }
+        }
+    }
+    if (selectAddress.isEmpty() && !ipList.isEmpty()) {
+        do {
+            for (const auto &ip: ipList) {
+                if (ip.type() == QNetworkInterface::Wifi && !getIpAddress(ip).isEmpty()) {
+                    selectAddress = getIpAddress(ip);
+                    break;
+                }
+            }
+            if (!selectAddress.isEmpty()) {
+                break;
+            }
+            for (const auto &ip: ipList) {
+                if (ip.type() == QNetworkInterface::Ethernet && !getIpAddress(ip).isEmpty()) {
+                    selectAddress = getIpAddress(ip);
+                }
+            }
+            if (!selectAddress.isEmpty()) {
+                break;
+            }
+
+            selectAddress = getIpAddress(ipList.first());
+        } while (false);
+    }
+
+    return selectAddress;
+}
+
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
 
     init();
@@ -225,15 +278,16 @@ void MainWindow::initUi() {
     serialTabWidget->addTab(secondSerialSettingsWidget, tr("第二串口设置"));
 
     openSerialButton = new QPushButton(tr("打开"), this);
-    refreshSerialButton = new QPushButton(tr("刷新串口列表"), this);
+    refreshSerialButton = new QPushButton(tr("刷新"), this);
 
     auto serialOpenRefreshLayout = new QHBoxLayout;
     serialOpenRefreshLayout->addWidget(openSerialButton);
     serialOpenRefreshLayout->addWidget(refreshSerialButton);
 
-    tcpAddressLineEdit = new QLineEdit(this);
-    tcpAddressLineEdit->setMaximumWidth(100);
-    tcpAddressLineEdit->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Maximum);
+    tcpAddressComboBox = new QComboBox(this);
+    tcpAddressComboBox->setEditable(true);
+    tcpAddressComboBox->setMaximumWidth(110);
+    tcpAddressComboBox->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Maximum);
     tcpPortLineEdit = new QLineEdit(this);
     tcpPortLineEdit->setMaximumWidth(50);
     tcpPortLineEdit->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Maximum);
@@ -241,7 +295,7 @@ void MainWindow::initUi() {
     tcpClientLabel = new QLabel(this);
 
     auto tcpEditLayout = new QHBoxLayout;
-    tcpEditLayout->addWidget(tcpAddressLineEdit);
+    tcpEditLayout->addWidget(tcpAddressComboBox);
     tcpEditLayout->addWidget(tcpPortLineEdit);
     auto tcpLayout = new QVBoxLayout;
     tcpLayout->addStretch();
@@ -521,7 +575,7 @@ void MainWindow::openReadWriter() {
         _serialType = SerialType::Normal;
     } else if (readWriterButtonGroup->checkedButton() == tcpServerRadioButton) {
         _serialType = SerialType::TcpServer;
-        auto address = tcpAddressLineEdit->text();
+        auto address = tcpAddressComboBox->currentText();
         bool ok;
         auto port = tcpPortLineEdit->text().toInt(&ok);
         if (!ok) {
@@ -545,7 +599,7 @@ void MainWindow::openReadWriter() {
         _readWriter = readWriter;
     } else if (readWriterButtonGroup->checkedButton() == tcpClientRadioButton) {
         _serialType = SerialType::TcpClient;
-        auto address = tcpAddressLineEdit->text();
+        auto address = tcpAddressComboBox->currentText();
         bool ok;
         auto port = tcpPortLineEdit->text().toInt(&ok);
         if (!ok) {
@@ -611,7 +665,7 @@ void MainWindow::openReadWriter() {
         settings->stopBits = (QSerialPort::StopBits) serialPortStopBitsComboBox->currentData().toInt();
         settings->parity = (QSerialPort::Parity) serialPortParityComboBox->currentData().toInt();
 
-        auto address = tcpAddressLineEdit->text();
+        auto address = tcpAddressComboBox->currentText();
         bool ok;
         auto port = tcpPortLineEdit->text().toInt(&ok);
         if (!ok) {
@@ -994,11 +1048,11 @@ void MainWindow::updateSendData(bool isHex, const QString &text) {
         QStringList lines = getLines(text);
         QList<QByteArray> dataList;
         if (isHex) {
-            for (auto &line :lines) {
+            for (auto &line: lines) {
                 dataList << dataFromHex(line);
             }
         } else {
-            for (auto &line:lines) {
+            for (auto &line: lines) {
                 dataList << line.toLocal8Bit();
             }
         }
@@ -1106,48 +1160,19 @@ void MainWindow::readSettings() {
         sendRNLineReturnButton->setChecked(true);
     }
 
+    auto ipList = getProperIpList();
+    tcpAddressComboBox->clear();
+    QStringList ipAddressList;
+    for (auto &ip: ipList) {
+        ipAddressList << getIpAddress(ip);
+    }
+    tcpAddressComboBox->addItems(ipAddressList);
+
     settings.beginGroup("TcpSettings");
-    auto ipList = getNetworkInterfaces();
     auto ipAddress = settings.value("tcp_address", "").toString();
     qDebug() << "last tcp address:" << ipAddress;
-    QString selectAddress = "";
-    if (!ipAddress.isEmpty() && !ipList.isEmpty()) {
-        auto found = false;
-        for (const auto &ip:ipList) {
-            if (getIpAddress(ip) == ipAddress) {
-                selectAddress = ipAddress;
-                found = true;
-                break;
-            }
-        }
-    }
-    if (selectAddress.isEmpty()) {
-        if (!ipList.isEmpty()) {
-            do {
-                for (const auto &ip:ipList) {
-                    if (ip.type() == QNetworkInterface::Wifi && !getIpAddress(ip).isEmpty()) {
-                        selectAddress = getIpAddress(ip);
-                        break;
-                    }
-                }
-                if (!selectAddress.isEmpty()) {
-                    break;
-                }
-                for (const auto &ip:ipList) {
-                    if (ip.type() == QNetworkInterface::Ethernet && !getIpAddress(ip).isEmpty()) {
-                        selectAddress = getIpAddress(ip);
-                    }
-                }
-                if (!selectAddress.isEmpty()) {
-                    break;
-                }
-
-                selectAddress = getIpAddress(ipList.first());
-            } while (false);
-        }
-    }
-
-    tcpAddressLineEdit->setText(selectAddress);
+    auto selectAddress = getProperIp(ipAddress);
+    tcpAddressComboBox->setCurrentText(selectAddress);
 
     auto tcpPort = settings.value("tcp_port").toInt();
     tcpPortLineEdit->setText(QString::number(tcpPort));
@@ -1237,7 +1262,7 @@ void MainWindow::writeSettings() {
     settings.setValue("send_line_return_type", static_cast<int >(sendLineReturn));
 
     settings.beginGroup("TcpSettings");
-    settings.setValue("tcp_address", tcpAddressLineEdit->text());
+    settings.setValue("tcp_address", tcpAddressComboBox->currentText());
     settings.setValue("tcp_port", tcpPortLineEdit->text().toInt());
 
     settings.beginGroup("RunConfig");
@@ -1309,12 +1334,22 @@ void MainWindow::saveSentData() {
 }
 
 void MainWindow::updateSerialPortNames() {
-    QStringList serialPortNameList = getSerialNameList();
+    auto serialPortNameList = getSerialNameList();
     serialPortNameComboBox->clear();
     serialPortNameComboBox->addItems(serialPortNameList);
 
     secondSerialPortNameComboBox->clear();
     secondSerialPortNameComboBox->addItems(serialPortNameList);
+
+    auto ipList = getProperIpList();
+    tcpAddressComboBox->clear();
+    QStringList ipAddressList;
+    for (auto &ip: ipList) {
+        ipAddressList << getIpAddress(ip);
+    }
+    tcpAddressComboBox->addItems(ipAddressList);
+    auto ip = getProperIp("");
+    tcpAddressComboBox->setCurrentText(ip);
 }
 
 void MainWindow::updateReceiveCount(qint64 count) {
@@ -1443,7 +1478,7 @@ QStringList MainWindow::getSerialNameList() {
 
     auto serialPortInfoList = QSerialPortInfo::availablePorts();
     QStringList l;
-    for (auto &s:serialPortInfoList) {
+    for (auto &s: serialPortInfoList) {
         l.append(s.portName());
     }
     return l;

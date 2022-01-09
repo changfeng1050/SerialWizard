@@ -11,8 +11,8 @@
 #include <QtNetwork/QNetworkInterface>
 #include "global.h"
 
-QTextCodec *gbk = QTextCodec::codecForName("GB18030");
-QTextCodec *utf8 = QTextCodec::codecForName("UTF-8");
+auto gbk = QTextCodec::codecForName("GB18030");
+auto utf8 = QTextCodec::codecForName("UTF-8");
 
 QString utf82Gbk(const QString &inStr) {
     //    QTextCodec *utf8 = QTextCodec::codecForName("UTF-8");

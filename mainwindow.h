@@ -233,7 +233,7 @@ private:
     QComboBox *secondSerialPortStopBitsComboBox{nullptr};
 
     // TCP设置
-    QLineEdit *tcpAddressLineEdit{nullptr};
+    QComboBox *tcpAddressComboBox{nullptr};
     QLineEdit *tcpPortLineEdit{nullptr};
     QLabel *tcpClientLabel{nullptr};
 

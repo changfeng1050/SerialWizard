@@ -69,7 +69,7 @@ QByteArray TcpServerReadWriter::readAll() {
         return _tcpSocket->readAll();
     }
     qDebug() << "TcpServerReadWriter readAll() _tcpSocket == nullptr or not open";
-    return QByteArray();
+    return {};
 }
 
 qint64 TcpServerReadWriter::write(const QByteArray &byteArray) const {
