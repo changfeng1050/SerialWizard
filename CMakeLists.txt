@@ -32,8 +32,6 @@ set(SOURCE_FILES
         CalculateCheckSumDialog.h
         ConvertDataDialog.cpp
         ConvertDataDialog.h
-        FrameInfoDialog.cpp
-        FrameInfoDialog.h
         global.cpp
         global.h
         data/AbstractReadWriter.cpp

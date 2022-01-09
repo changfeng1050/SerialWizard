@@ -191,6 +191,8 @@ bool keepMatchIndexLine(DataProcessDialog *dialog, const QString &line) {
 }
 
 DataProcessDialog::DataProcessDialog(const QString &text, QWidget *parent, Qt::WindowFlags f) : QDialog(parent, f) {
+    setWindowFlags(
+            Qt::Dialog | Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint | Qt::WindowCloseButtonHint);
     createUi();
     createConnect();
     readSettings();

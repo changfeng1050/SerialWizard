@@ -9,15 +9,13 @@
 
 class QLineEdit;
 
-class QLabel;
-
-class QPushButton;
-
 class QCheckBox;
 
 class QComboBox;
 
 class QTextEdit;
+
+class QVBoxLayout;
 
 class ConvertDataDialog : public QDialog {
 Q_OBJECT
@@ -29,18 +27,20 @@ private:
 
     void createConnect();
 
+    void processData();
+
     QTextEdit *inputTextEdit;
-    QTextEdit *resultTextEdit;
 
     QCheckBox *hexCheckBox;
 
-    QComboBox *fromCodecComboBox;
-    QComboBox *toCodecComboBox;
+    QLineEdit *prefixLineEdit;
 
-    QPushButton *exchangeCodecButton;
+    QLineEdit *separatorLineEdit;
 
-    QPushButton *parseButton;
-    QPushButton *convertButton;
+    QVBoxLayout *outputLayout;
+
+    QComboBox *otherCodexComboBox;
+    QTextEdit *otherCodecTextEdit;
 };
 
 #endif //SERIALWIZARD_CALCULATECHECKSUMDIALOG_H

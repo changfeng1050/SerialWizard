@@ -888,9 +888,9 @@ void MainWindow::createActions() {
     validateDataAct->setStatusTip(tr("计算数据校验值"));
     connect(validateDataAct, &QAction::triggered, this, &MainWindow::openDataValidator);
 
-    convertDataAct = new QAction(tr("数据转换(&T)"));
+    convertDataAct = new QAction(tr("字符编码(&T)"));
     convertDataAct->setShortcut(tr("Ctrl+T"));
-    convertDataAct->setStatusTip(tr("数据转换"));
+    convertDataAct->setStatusTip(tr("字符编码"));
     connect(convertDataAct, &QAction::triggered, this, &MainWindow::openConvertDataDialog);
 
     dataProcessAct = new QAction(tr("数据处理(&P)"));

@@ -10,8 +10,9 @@
 
 #include "CalculateCheckSumDialog.h"
 
-
 CalculateCheckSumDialog::CalculateCheckSumDialog(QWidget *parent, Qt::WindowFlags f) : QDialog(parent, f) {
+    setWindowFlags(
+            Qt::Dialog | Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint | Qt::WindowCloseButtonHint);
     createUi();
     createConnect();
 }
@@ -26,7 +27,6 @@ void CalculateCheckSumDialog::createUi() {
     xorResultLabel = new QLabel(this);
 
     sumResultLabel = new QLabel(this);
-
 
     auto inputLayout = new QHBoxLayout;
     inputLayout->addWidget(inputLineEdit);
@@ -43,7 +43,6 @@ void CalculateCheckSumDialog::createUi() {
     layout->addLayout(inputLayout);
     layout->addLayout(resultLayout);
 
-    layout->setSizeConstraint(QLayout::SetFixedSize);
     setLayout(layout);
     setWindowTitle(tr("计算检验"));
 }
@@ -78,14 +77,12 @@ void CalculateCheckSumDialog::createConnect() {
 
         xorResultLabel->show();
         sumResultLabel->show();
-
-
     });
 }
 
 QString CalculateCheckSumDialog::getSumResult(const QByteArray &data) {
     int sum = 0x00;
-    for (auto s:data) {
+    for (auto s: data) {
         sum += s;
     }
     return QString::number(sum & 0x00FFFF, 16).left(4).toUpper();

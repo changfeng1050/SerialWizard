@@ -9,15 +9,9 @@
 #include <QWidget>
 #include <QtNetwork/QNetworkInterface>
 
-extern QString utf82Gbk(const QString &inStr);
+extern QString fromCodec(const QByteArray &data, QTextCodec *codec);
 
-extern QString fromUtf8(const QByteArray &data);
-
-extern QString fromGbk(const QByteArray &data);
-
-extern QByteArray toGbkByteArray(const QString &text);
-
-extern QByteArray toUtf8ByteArray(const QString &text);
+extern QByteArray toCodecByteArray(const QString &data, QTextCodec *codec);
 
 extern QString getTimestamp();
 
@@ -35,13 +29,13 @@ extern QString getFileSuffix(const QString &filePath);
 
 extern QString getFileDir(const QString &filePath);
 
-extern QString getIp();
+[[maybe_unused]] extern QString getIp();
 
 extern QString getIpAddress(const QNetworkInterface &interface);
 
 extern QList<QNetworkInterface> getNetworkInterfaces();
 
-extern QByteArray dataToHex(const QByteArray &data);
+extern QByteArray dataToHex(const QByteArray &data, const QString &separator = " ", const QString &prefix = "");
 
 extern QByteArray dataFromHex(const QString &data);
 

@@ -32,7 +32,6 @@ class QButtonGroup;
 class SerialController;
 
 #include <QtWidgets/QMainWindow>
-#include "FrameInfoDialog.h"
 
 struct RunConfig {
     QString lastDir;

@@ -11,47 +11,12 @@
 #include <QtNetwork/QNetworkInterface>
 #include "global.h"
 
-auto gbk = QTextCodec::codecForName("GB18030");
-auto utf8 = QTextCodec::codecForName("UTF-8");
-
-QString utf82Gbk(const QString &inStr) {
-    //    QTextCodec *utf8 = QTextCodec::codecForName("UTF-8");
-
-    //    gbk->fromUnicode(utf8->toUnicode(inStr.toLatin1()));
-
-    return QString(gbk->fromUnicode(inStr));
-
-    //    QString utf2gbk = gbk->toUnicode(inStr.toLocal8Bit());
-    //    return utf2gbk;
-}
-//
-//QString gbk2Utf8(const QString &inStr) {
-//    QTextCodec *gbk = QTextCodec::codecForName("GB18030");
-//    QTextCodec *utf8 = QTextCodec::codecForName("UTF-8");
-//
-//    gbk->fromUnicode(utf8->toUnicode(inStr.toLatin1()));
-//
-//    return QString(gbk->fromUnicode(inStr));
-//}
-
-QString fromUtf8(const QByteArray &data) {
-    qDebug() << "fromUtf8" << data.toHex();
-    return utf8->toUnicode(data);
+QString fromCodec(const QByteArray &data, QTextCodec *codec) {
+    return codec->toUnicode(data);
 }
 
-QString fromGbk(const QByteArray &data) {
-    qDebug() << "fromGbk" << data.toHex();
-    return gbk->toUnicode(data);
-}
-
-QByteArray toGbkByteArray(const QString &text) {
-    qDebug() << "toGbkByteArray" << text;
-    return text.toLocal8Bit();
-}
-
-QByteArray toUtf8ByteArray(const QString &text) {
-    qDebug() << "toUtf8ByteArray" << text;
-    return text.toUtf8();
+QByteArray toCodecByteArray(const QString &text, QTextCodec *codec) {
+    return codec->fromUnicode(text);
 }
 
 bool okToContinue(const QString &title, const QString &text, QWidget *parent) {
@@ -79,81 +44,45 @@ QString getTimestamp() {
     return time.toString("hh:mm:ss.zzz");
 }
 
-QString getIp() {
-    auto interfaces = QNetworkInterface::allInterfaces();
-
-    for (const auto &interface:interfaces) {
-        qDebug() << "interface name:" << interface.name();
-        qDebug() << "interface address:" << interface.hardwareAddress();
-        qDebug() << "interface type:" << interface.type();
-        auto entries = interface.addressEntries();
-
-        for (const auto &entry:entries) {
-            qDebug() << "entry ip address:" << entry.ip().toString();
-        }
+QByteArray dataToHex(const QByteArray &data, const QString &separator, const QString &prefix) {
+    if (separator.isEmpty() && prefix.isEmpty()) {
+        return data.toHex().toUpper();
     }
 
-    auto localHostName = QHostInfo::localHostName();
-    qDebug() << "local host name:" << localHostName;
-    auto ipAddress = QHostInfo::fromName(localHostName).addresses();
-    qDebug() << "ip address count:" << ipAddress.length();
-    qDebug() << "ip address:" << ipAddress;
-
-    for (const auto &address:ipAddress) {
-        if (address.protocol() == QAbstractSocket::IPv4Protocol) {
-            return address.toString();
-        }
-    }
-    for (const auto &address:ipAddress) {
-        if (address.protocol() == QAbstractSocket::IPv6Protocol) {
-            return address.toString();
-        }
-    }
-
-    return "";
-}
-
-QString getAddressString(const QHostAddress &address) {
-    return address.toString();
-}
-
-QByteArray dataToHex(const QByteArray &data) {
-    QByteArray result = data.toHex().toUpper();
-
-    for (int i = 2; i < result.size(); i += 3)
-        result.insert(i, ' ');
-
-    return result;
-}
-
-QByteArray dataFromHex(const QString &hex) {
-    QRegExp rx("(([0-9a-fA-F]{2}\\s?)+)");
-    rx.indexIn(hex.simplified());
     QStringList list;
-    int pos = 0;
-    while ((pos = rx.indexIn(hex, pos)) != -1) {
+    auto len = data.count();
+    for (int i = 0; i < len; i++) {
+        list.append(prefix);
+        auto hex = QString::number(data.at(i) & 0xFF, 16).toUpper();
+        while (hex.size() < 2) {
+            hex.prepend('0');
+        }
+        list.append(hex);
+        if (i < len - 1) {
+            list.append(separator);
+        }
+    }
+    return list.join("").toUtf8();
+}
+
+QByteArray dataFromHex(const QString &data) {
+    QRegExp rx("([0-9a-fA-F]{2})");
+    QStringList list;
+    auto pos = 0;
+    while ((pos = rx.indexIn(data, pos)) != -1) {
         list << rx.cap(1);
         pos += rx.matchedLength();
     }
 
-    QString m;
-    // 查找最匹配的
-    for (const auto &text:list) {
-        qDebug() << "dataFromHex: text:" << text << endl;
-        if (text.count() > m.count()) {
-            m = text;
-        }
+    if (list.isEmpty()) {
+        return {};
     }
-    auto result1 = m.trimmed();
-    qDebug() << "dataFromHex" << hex << ">>" << result1 << endl;
-    QByteArray line = result1.toLatin1();
-    line.replace(' ', QByteArray());
-    auto result = QByteArray::fromHex(line);
-    return result;
+    auto line = list.join("").toLatin1();
+    return QByteArray::fromHex(line);
 }
 
 QString getIpAddress(const QNetworkInterface &interface) {
-    for (const auto &address:interface.addressEntries()) {
+    for (const auto &address: interface.addressEntries()) {
         if (address.ip().protocol() == QAbstractSocket::IPv4Protocol && !address.ip().toString().startsWith("169.")) {
             return address.ip().toString();
         }
@@ -164,12 +93,12 @@ QString getIpAddress(const QNetworkInterface &interface) {
 QList<QNetworkInterface> getNetworkInterfaces() {
     QList<QNetworkInterface> list;
     auto interfaces = QNetworkInterface::allInterfaces();
-    for (const auto &interface:interfaces) {
+    for (const auto &interface: interfaces) {
         if (interface.isValid() &&
             (interface.type() == QNetworkInterface::Wifi || interface.type() == QNetworkInterface::Ethernet)) {
             qDebug() << "interface " << interface.type() << interface.name() << interface.hardwareAddress();
             auto entries = interface.addressEntries();
-            for (const auto &entry:entries) {
+            for (const auto &entry: entries) {
                 if (entry.ip().protocol() == QAbstractSocket::IPv4Protocol) {
                     qDebug() << "interface ip:" << entry.ip().toString();
                 }
