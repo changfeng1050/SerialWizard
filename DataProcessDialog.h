@@ -22,7 +22,8 @@ class QPushButton;
 class DataProcessDialog : public QDialog {
 Q_OBJECT
 public:
-    explicit DataProcessDialog(const QString &text="", QWidget *parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags());
+    explicit DataProcessDialog(const QString &text = "", QWidget *parent = nullptr,
+                               Qt::WindowFlags f = Qt::WindowFlags());
 
     ~DataProcessDialog() override;
 
@@ -63,6 +64,7 @@ public:
 
 protected:
     void keyPressEvent(QKeyEvent *) override;
+
     void closeEvent(QCloseEvent *event) override;
 
     void dropEvent(QDropEvent *event) override;
@@ -74,6 +76,8 @@ public Q_SLOT:
     void replaceLineReturn();
 
     void splitLine();
+
+    void deleteFrame();
 
 private:
     void createUi();
@@ -107,6 +111,8 @@ private:
     QPushButton *deleteSuffixButton{nullptr};
     QPushButton *deleteBeforeButton{nullptr};
     QPushButton *deleteAfterButton{nullptr};
+    QPushButton *deleteMatchTextLineButton{nullptr};
+    QPushButton *saveMatchTextLineButton{nullptr};
 
     QRadioButton *returnTypeRnRadioButton{nullptr};
     QRadioButton *returnTypeRRadioButton{nullptr};
@@ -121,14 +127,12 @@ private:
     QLineEdit *framePrefixLineEdit{nullptr};
     QLineEdit *frameSuffixLineEdit{nullptr};
     QPushButton *frameSplitLineButton{nullptr};
+    QPushButton *frameDeleteButton{nullptr};
 
     QPushButton *deleteShorterLineButton{nullptr};
     QPushButton *deleteShorterOrEqualLineButton{nullptr};
     QPushButton *deleteLongerLineButton{nullptr};
     QPushButton *deleteLongerOrEqualLineButton{nullptr};
-
-    QPushButton *deleteMatchTextLineButton{nullptr};
-    QPushButton *saveMatchTextLineButton{nullptr};
 
     QList<QLineEdit *> indexLineEditList;
     QList<QLineEdit *> matchLineEditList;
@@ -137,7 +141,6 @@ private:
 
     QPushButton *saveButton{nullptr};
     QPushButton *cancelButton{nullptr};
-
 };
 
 #endif //SERIALWIZARD_DATAPROCESSDIALOG_H
