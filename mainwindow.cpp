@@ -286,9 +286,10 @@ void MainWindow::initUi() {
 
     tcpAddressComboBox = new QComboBox(this);
     tcpAddressComboBox->setEditable(true);
-    tcpAddressComboBox->setMaximumWidth(110);
+    tcpAddressComboBox->setMaximumWidth(120);
     tcpAddressComboBox->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Maximum);
     tcpPortLineEdit = new QLineEdit(this);
+    tcpPortLineEdit->setAlignment(Qt::AlignCenter);
     tcpPortLineEdit->setMaximumWidth(50);
     tcpPortLineEdit->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Maximum);
 
@@ -339,12 +340,14 @@ void MainWindow::initUi() {
     autoSendCheckBox = new QCheckBox(tr("自动发送"), this);
     auto sendIntervalLabel = new QLabel(tr("间隔(毫秒)"), this);
     sendIntervalLineEdit = new QLineEdit(this);
+    sendIntervalLineEdit->setAlignment(Qt::AlignCenter);
     sendIntervalLineEdit->setMaximumWidth(50);
     sendIntervalLineEdit->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Maximum);
     sendIntervalLabel->setBuddy(sendIntervalLineEdit);
 
     auto emptyLineDelayLabel = new QLabel(tr("空行间隔(毫秒)"), this);
     emptyLineDelayLindEdit = new QLineEdit(this);
+    emptyLineDelayLindEdit->setAlignment(Qt::AlignCenter);
     emptyLineDelayLindEdit->setMaximumWidth(50);
     emptyLineDelayLindEdit->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Maximum);
     emptyLineDelayLabel->setBuddy(emptyLineDelayLindEdit);
@@ -368,6 +371,7 @@ void MainWindow::initUi() {
     resetLoopSendButton = new QPushButton(tr("重置计数"), this);
     currentSendCountLineEdit = new QLineEdit(this);
     currentSendCountLineEdit->setText("0");
+    currentSendCountLineEdit->setAlignment(Qt::AlignCenter);
     currentSendCountLineEdit->setMaximumWidth(30);
     currentSendCountLineEdit->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Minimum);
 
@@ -510,16 +514,19 @@ void MainWindow::createStatusBar() {
 
     auto receiveByteCountLabel = new QLabel(tr("接收:"), this);
     statusBarReadBytesLabel = new QLabel(this);
+    statusBarReadBytesLabel->setAlignment(Qt::AlignCenter);
     statusBarReadBytesLabel->setMinimumWidth(50);
     statusBarReadBytesLabel->setText("0");
 
     auto sendByteCountLabel = new QLabel(tr("发送:"), this);
     statusBarWriteBytesLabel = new QLabel(this);
+    statusBarWriteBytesLabel->setAlignment(Qt::AlignCenter);
     statusBarWriteBytesLabel->setMinimumWidth(50);
     statusBarWriteBytesLabel->setText("0");
 
     auto sendLineCountLabel = new QLabel(tr("发送行数:"), this);
     statusBarSendLinesLabel = new QLabel(this);
+    statusBarSendLinesLabel->setAlignment(Qt::AlignCenter);
     statusBarSendLinesLabel->setMinimumWidth(50);
     statusBarSendLinesLabel->setText("0");
 

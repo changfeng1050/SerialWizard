@@ -1,6 +1,7 @@
 //
 // Created by chang on 2021/6/14.
 //
+#include <QMimeData>
 #include <QCloseEvent>
 #include <QTextEdit>
 #include <QLineEdit>
@@ -12,14 +13,24 @@
 #include <QCheckBox>
 #include <QLabel>
 #include <QSettings>
+#include <QFileInfo>
 
 #include "DataProcessDialog.h"
 #include "global.h"
+#include "utils/FileUtil.h"
 
 static const int MATCH_INDEX_COUNT = 5;
 
 QString convertSimplified(DataProcessDialog *dialog, const QString &line) {
     return line.simplified();
+}
+
+QString convertRemoveText(DataProcessDialog *dialog, const QString &line) {
+    auto text = dialog->matchText();
+    if (line.contains(text)) {
+        return QString(line).remove(text);
+    }
+    return line;
 }
 
 QString convertRemovePrefix(DataProcessDialog *dialog, const QString &line) {
@@ -112,20 +123,24 @@ QString convertRemoveAfter(DataProcessDialog *dialog, const QString &line) {
     return line.mid(0, index);
 }
 
-bool deleteShorterLine(DataProcessDialog *dialog, const QString &line) {
+bool shorterLine(DataProcessDialog *dialog, const QString &line) {
     return line.count() < dialog->matchLineCount();
 }
 
-bool deleteShorterOrEqualLine(DataProcessDialog *dialog, const QString &line) {
+bool shorterOrEqualLine(DataProcessDialog *dialog, const QString &line) {
     return line.count() <= dialog->matchLineCount();
 }
 
-bool deleteLongerLine(DataProcessDialog *dialog, const QString &line) {
-    return line.count() > dialog->matchLineCount();
+bool equalLine(DataProcessDialog *dialog, const QString &line) {
+    return line.count() == dialog->matchLineCount();
 }
 
-bool deleteLongerOrEqualLine(DataProcessDialog *dialog, const QString &line) {
+bool longerOrEqualLine(DataProcessDialog *dialog, const QString &line) {
     return line.count() >= dialog->matchLineCount();
+}
+
+bool longerLine(DataProcessDialog *dialog, const QString &line) {
+    return line.count() > dialog->matchLineCount();
 }
 
 bool deleteMatchTextLine(DataProcessDialog *dialog, const QString &line) {
@@ -151,7 +166,7 @@ bool deleteMatchIndexLine(DataProcessDialog *dialog, const QString &line) {
     if (map.isEmpty()) {
         return false;
     }
-    for (auto &index : map.keys()) {
+    for (auto &index: map.keys()) {
         if (index > items.count() - 1) {
             return false;
         }
@@ -178,7 +193,7 @@ bool keepMatchIndexLine(DataProcessDialog *dialog, const QString &line) {
     if (map.isEmpty()) {
         return false;
     }
-    for (auto &index : map.keys()) {
+    for (auto &index: map.keys()) {
         if (index > items.count() - 1) {
             return false;
         }
@@ -199,6 +214,9 @@ DataProcessDialog::DataProcessDialog(const QString &text, QWidget *parent, Qt::W
     if (!text.isEmpty()) {
         textEdit->setText(text);
     }
+
+    textEdit->setAcceptDrops(false);
+    setAcceptDrops(true);
 }
 
 DataProcessDialog::~DataProcessDialog() {
@@ -224,7 +242,7 @@ void DataProcessDialog::createUi() {
 
     auto matchInfoLayout = new QVBoxLayout;
 
-    auto matchTextLabel = new QLabel(tr("匹配字符"), this);
+    auto matchTextLabel = new QLabel(tr("匹配字符串"), this);
     matchTextLineEdit = new QLineEdit(this);
     matchTextLabel->setBuddy(matchTextLineEdit);
 
@@ -235,6 +253,7 @@ void DataProcessDialog::createUi() {
     auto positionLayout = new QHBoxLayout;
     auto fromIndexLabel = new QLabel(tr("起始字符/字节(从0开始)"), this);
     fromIndexLineEdit = new QLineEdit(this);
+    fromIndexLineEdit->setAlignment(Qt::AlignCenter);
     fromIndexLineEdit->setFixedWidth(30);
     fromIndexLabel->setBuddy(fromIndexLineEdit);
     matchFirstRadioButton = new QRadioButton(tr("匹配第一个"), this);
@@ -245,6 +264,7 @@ void DataProcessDialog::createUi() {
     matchPositionRadioGroup->addButton(matchLastRadioButton);
     matchPositionRadioGroup->addButton(matchMiddleRadioButton);
     matchPositionLineEdit = new QLineEdit(this);
+    matchPositionLineEdit->setAlignment(Qt::AlignCenter);
     matchPositionLineEdit->setFixedWidth(30);
 
     positionLayout->addWidget(fromIndexLabel);
@@ -265,15 +285,21 @@ void DataProcessDialog::createUi() {
     deleteSuffixButton = new QPushButton(tr("后缀字符"), this);
     deleteBeforeButton = new QPushButton(tr("匹配字符串之前的字符"), this);
     deleteAfterButton = new QPushButton(tr("匹配字符串之后的字符"), this);
+    deleteMatchTextLineButton = new QPushButton(tr("删除匹配字符行"), this);
+    keepMatchTextLineButton = new QPushButton(tr("保留匹配字符行"), this);
     deleteLayout->addWidget(includeMatchTextCheckBox);
+    auto deleteLabel = new QLabel(tr("删除"));
+    deleteLayout->addWidget(deleteLabel);
     deleteLayout->addWidget(deleteTextButton);
     deleteLayout->addWidget(deletePrefixButton);
     deleteLayout->addWidget(deleteSuffixButton);
     deleteLayout->addWidget(deleteBeforeButton);
     deleteLayout->addWidget(deleteAfterButton);
     deleteLayout->addStretch();
+    deleteLayout->addWidget(deleteMatchTextLineButton);
+    deleteLayout->addWidget(keepMatchTextLineButton);
 
-    auto deleteGroupBox = new QGroupBox(tr("删除字符串"), this);
+    auto deleteGroupBox = new QGroupBox(tr("按字符串处理"), this);
     deleteGroupBox->setLayout(deleteLayout);
 
     auto returnReplaceLabel = new QLabel(tr("将换行符替换为"), this);
@@ -317,6 +343,7 @@ void DataProcessDialog::createUi() {
     frameSuffixLineEdit = new QLineEdit(this);
     frameSuffixLabel->setBuddy(frameSuffixLineEdit);
     frameSplitLineButton = new QPushButton(tr("重新换行"), this);
+    frameDeleteButton = new QPushButton(tr("删除帧"), this);
 
     auto frameLayout = new QHBoxLayout;
     frameLayout->addWidget(framePrefixLabel);
@@ -325,33 +352,44 @@ void DataProcessDialog::createUi() {
     frameLayout->addWidget(frameSuffixLineEdit);
     frameLayout->addStretch();
     frameLayout->addWidget(frameSplitLineButton);
+    frameLayout->addWidget(frameDeleteButton);
 
     auto frameGroupBox = new QGroupBox(tr("帧处理"), this);
     frameGroupBox->setLayout(frameLayout);
 
-    auto matchTextCountLabel = new QLabel(tr("匹配行字符数"), this);
+    auto matchTextCountLabel = new QLabel(tr("匹配字符串的字符数"), this);
     matchTextCountLineEdit = new QLineEdit(this);
+    matchTextCountLineEdit->setAlignment(Qt::AlignCenter);
     matchTextCountLineEdit->setFixedWidth(30);
     matchTextCountLabel->setBuddy(matchTextCountLineEdit);
-    deleteShorterLineButton = new QPushButton(tr("删除短于匹配行"));
-    deleteShorterOrEqualLineButton = new QPushButton(tr("删除短于或等于匹配行"));
-    deleteLongerLineButton = new QPushButton(tr("删除长于匹配行"));
-    deleteLongerOrEqualLineButton = new QPushButton(tr("删除长于或等于匹配行"));
+    deleteShorterLineButton = new QPushButton(tr("删除短于的行"));
+    deleteShorterOrEqualLineButton = new QPushButton(tr("删除短于或等于的行"));
+    deleteEqualLineButton = new QPushButton(tr("删除等于的行"));
+    deleteLongerOrEqualLineButton = new QPushButton(tr("删除长于或等于行"));
+    deleteLongerLineButton = new QPushButton(tr("删除长于的行"));
 
-    deleteMatchTextLineButton = new QPushButton(tr("删除匹配行"), this);
-    saveMatchTextLineButton = new QPushButton(tr("保留匹配行"), this);
+    keepShorterLineButton = new QPushButton(tr("保留短于的行"));
+    keepShorterOrEqualLineButton = new QPushButton(tr("保留短于或等于的行"));
+    keepEqualLineButton = new QPushButton(tr("保留等于的行"));
+    keepLongerOrEqualLineButton = new QPushButton(tr("保留长于或等于的行"));
+    keepLongerLineButton = new QPushButton(tr("保留长于的行"));
 
     auto deleteLineLayout = new QHBoxLayout;
     deleteLineLayout->addWidget(matchTextCountLabel);
     deleteLineLayout->addWidget(matchTextCountLineEdit);
     deleteLineLayout->addWidget(deleteShorterLineButton);
     deleteLineLayout->addWidget(deleteShorterOrEqualLineButton);
+    deleteLineLayout->addWidget(deleteEqualLineButton);
     deleteLineLayout->addWidget(deleteLongerLineButton);
     deleteLineLayout->addWidget(deleteLongerOrEqualLineButton);
     deleteLineLayout->addStretch();
-    deleteLineLayout->addWidget(deleteMatchTextLineButton);
-    deleteLineLayout->addWidget(saveMatchTextLineButton);
-    auto deleteLineGroupBox = new QGroupBox(tr("行处理"), this);
+    deleteLineLayout->addWidget(keepShorterLineButton);
+    deleteLineLayout->addWidget(keepShorterOrEqualLineButton);
+    deleteLineLayout->addWidget(keepEqualLineButton);
+    deleteLineLayout->addWidget(keepLongerOrEqualLineButton);
+    deleteLineLayout->addWidget(keepLongerLineButton);
+
+    auto deleteLineGroupBox = new QGroupBox(tr("按行字符数处理"), this);
     deleteLineGroupBox->setLayout(deleteLineLayout);
 
     auto lineIndexLayout = new QHBoxLayout;
@@ -359,6 +397,7 @@ void DataProcessDialog::createUi() {
     lineIndexLayout->addWidget(lineIndexLabel1);
     for (int i = 0; i < MATCH_INDEX_COUNT; i++) {
         auto indexLineEdit = new QLineEdit(this);
+        indexLineEdit->setAlignment(Qt::AlignCenter);
         indexLineEdit->setFixedWidth(30);
         indexLineEditList.append(indexLineEdit);
         lineIndexLayout->addWidget(indexLineEdit);
@@ -367,14 +406,16 @@ void DataProcessDialog::createUi() {
     lineIndexLayout->addWidget(lineIndexLabel2);
     for (int i = 0; i < MATCH_INDEX_COUNT; i++) {
         auto matchLineEdit = new QLineEdit(this);
+        matchLineEdit->setAlignment(Qt::AlignCenter);
         matchLineEditList.append(matchLineEdit);
         lineIndexLayout->addWidget(matchLineEdit);
     }
-
-    deleteMatchLineButton = new QPushButton(tr("删除匹配行"), this);
-    keepMatchLineButton = new QPushButton(tr("保留匹配行"), this);
+    lineIndexLayout->addStretch();
+    deleteMatchLineButton = new QPushButton(tr("删除行"), this);
+    keepMatchLineButton = new QPushButton(tr("保留行"), this);
     lineIndexLayout->addWidget(deleteMatchLineButton);
     lineIndexLayout->addWidget(keepMatchLineButton);
+
     auto lineIndexGroup = new QGroupBox(tr("高级行处理"), this);
     lineIndexGroup->setLayout(lineIndexLayout);
 
@@ -435,10 +476,10 @@ void DataProcessDialog::createConnect() {
     connect(matchTextLineEdit, &QLineEdit::textChanged, [this](const QString &text) {
         matchTextCountLineEdit->setText(QString::number(text.count()));
         auto items = matchTextLineEdit->text().split(QRegExp("\\s+"));
-        for (const auto &item : indexLineEditList) {
+        for (const auto &item: indexLineEditList) {
             item->setText("");
         }
-        for (const auto &item : matchLineEditList) {
+        for (const auto &item: matchLineEditList) {
             item->setText("");
         }
 
@@ -453,6 +494,11 @@ void DataProcessDialog::createConnect() {
     connect(simplifiedButton, &QPushButton::clicked, [this] {
         processText(convertSimplified);
     });
+
+    connect(deleteTextButton, &QPushButton::clicked, [this] {
+        processText(convertRemoveText);
+    });
+
     connect(deletePrefixButton, &QPushButton::clicked, [this] {
         processText(convertRemovePrefix);
     });
@@ -463,7 +509,7 @@ void DataProcessDialog::createConnect() {
     connect(deleteBeforeButton, &QPushButton::clicked, [this] {
         processText(convertRemoveBefore);
     });
-    connect(deleteBeforeButton, &QPushButton::clicked, [this] {
+    connect(deleteAfterButton, &QPushButton::clicked, [this] {
         processText(convertRemoveAfter);
     });
 
@@ -471,35 +517,60 @@ void DataProcessDialog::createConnect() {
 
     connect(frameSplitLineButton, &QPushButton::clicked, this, &DataProcessDialog::splitLine);
 
+    connect(frameDeleteButton, &QPushButton::clicked, this, &DataProcessDialog::deleteFrame);
+
     connect(deleteShorterLineButton, &QPushButton::clicked, [this] {
-        processText2(deleteShorterLine);
+        processDeleteLines(shorterLine);
     });
     connect(deleteShorterOrEqualLineButton, &QPushButton::clicked, [this] {
-        processText2(deleteShorterOrEqualLine);
+        processDeleteLines(shorterOrEqualLine);
     });
-
-    connect(deleteLongerLineButton, &QPushButton::clicked, [this] {
-        processText2(deleteLongerLine);
+    connect(deleteEqualLineButton, &QPushButton::clicked, [this] {
+        processDeleteLines(equalLine);
     });
 
     connect(deleteLongerOrEqualLineButton, &QPushButton::clicked, [this] {
-        processText2(deleteLongerOrEqualLine);
+        processDeleteLines(longerOrEqualLine);
+    });
+
+    connect(deleteLongerLineButton, &QPushButton::clicked, [this] {
+        processDeleteLines(longerLine);
+    });
+
+    connect(keepShorterLineButton, &QPushButton::clicked, [this] {
+        processKeepLines(shorterLine);
+    });
+
+    connect(keepShorterOrEqualLineButton, &QPushButton::clicked, [this] {
+        processKeepLines(shorterOrEqualLine);
+    });
+
+    connect(keepEqualLineButton, &QPushButton::clicked, [this] {
+        processKeepLines(equalLine);
+    });
+
+    connect(keepLongerOrEqualLineButton, &QPushButton::clicked, [this] {
+        processKeepLines(longerOrEqualLine);
+    });
+
+    connect(keepLongerLineButton, &QPushButton::clicked, [this] {
+        processKeepLines(longerLine);
     });
 
     connect(deleteMatchTextLineButton, &QPushButton::clicked, [this] {
-        processText2(deleteMatchTextLine);
+        processDeleteLines(deleteMatchTextLine);
     });
 
-    connect(saveMatchTextLineButton, &QPushButton::clicked, [this] {
-        processText2(saveMatchTextLine);
+    connect(keepMatchTextLineButton, &QPushButton::clicked, [this] {
+        processDeleteLines(saveMatchTextLine);
     });
 
     connect(deleteMatchLineButton, &QPushButton::clicked, [this] {
-        processText2(deleteMatchIndexLine);
+        processDeleteLines(deleteMatchIndexLine);
     });
 
     connect(keepMatchLineButton, &QPushButton::clicked, [this] {
-        processText2(keepMatchIndexLine);
+        processDeleteLines(keepMatchIndexLine);
     });
 
     connect(cancelButton, &QPushButton::clicked, [this] {
@@ -515,9 +586,7 @@ void DataProcessDialog::createConnect() {
     });
 }
 
-void DataProcessDialog::processText(QString (*p)(DataProcessDialog *, const QString &)
-
-) {
+void DataProcessDialog::processText(QString (*p)(DataProcessDialog *, const QString &)) {
     auto text = textEdit->toPlainText();
     if (text.isEmpty()) return;
     QString t = text;
@@ -531,9 +600,7 @@ void DataProcessDialog::processText(QString (*p)(DataProcessDialog *, const QStr
     textEdit->setPlainText(lines.join("\n"));
 }
 
-void DataProcessDialog::processText2(bool (*p)(DataProcessDialog *, const QString &)
-
-) {
+void DataProcessDialog::processDeleteLines(bool (*p)(DataProcessDialog *, const QString &)) {
     auto text = textEdit->toPlainText();
     if (text.isEmpty()) {
         return;
@@ -545,6 +612,22 @@ void DataProcessDialog::processText2(bool (*p)(DataProcessDialog *, const QStrin
         auto line = in.readLine();
         auto needDelete = p(this, line);
         if (!needDelete) lines.append(line);
+    }
+    textEdit->setPlainText(lines.join("\n"));
+}
+
+void DataProcessDialog::processKeepLines(bool (*p)(DataProcessDialog *, const QString &)) {
+    auto text = textEdit->toPlainText();
+    if (text.isEmpty()) {
+        return;
+    }
+    QString t = text;
+    QTextStream in(&t);
+    QStringList lines;
+    while (!in.atEnd()) {
+        auto line = in.readLine();
+        auto need = p(this, line);
+        if (need) lines.append(line);
     }
     textEdit->setPlainText(lines.join("\n"));
 }
@@ -799,9 +882,69 @@ void DataProcessDialog::keyPressEvent(QKeyEvent *event) {
 }
 
 void DataProcessDialog::dropEvent(QDropEvent *event) {
-    QWidget::dropEvent(event);
+    auto urls = event->mimeData()->urls();
+    if (urls.isEmpty()) {
+        event->ignore();
+        return;
+    }
+
+    QStringList filePathList;
+
+    QString filePath;
+    for (auto &url: urls) {
+        auto fileInfo = QFileInfo(url.toLocalFile());
+        if (isTextFile(fileInfo.fileName())) {
+            filePath = fileInfo.absoluteFilePath();
+            break;
+        }
+    }
+    qDebug() << "accept file:" << filePath;
+    if (!filePath.isEmpty()) {
+        auto text = readFromFile(filePath);
+        textEdit->setText(text);
+    } else {
+        event->ignore();
+    }
 }
 
 void DataProcessDialog::dragEnterEvent(QDragEnterEvent *event) {
-    QWidget::dragEnterEvent(event);
+    if (event->mimeData()->hasFormat("text/uri-list")) {
+        event->acceptProposedAction();
+    } else {
+        event->ignore();
+    }
+}
+
+void DataProcessDialog::deleteFrame() {
+    auto prefix = framePrefixLineEdit->text().trimmed();
+    auto suffix = frameSuffixLineEdit->text().trimmed();
+    if (prefix.isEmpty() || suffix.isEmpty()) {
+        return;
+    }
+
+    auto text = textEdit->toPlainText();
+    if (text.isEmpty()) {
+        return;
+    }
+    QString t = text;
+    QTextStream in(&t);
+    QStringList lines;
+    auto separator = ' ';
+    while (!in.atEnd()) {
+        auto line = in.readLine();
+        lines.append(line);
+    }
+    text = lines.join(separator).simplified();
+    int prefixIndex = -1;
+    int suffixIndex = -1;
+
+    prefixIndex = text.indexOf(prefix);
+
+    while (prefixIndex >= 0) {
+        suffixIndex = text.indexOf(suffix, prefixIndex + prefix.length());
+        if (suffixIndex >= 0) {
+            text = text.remove(prefixIndex, suffixIndex - prefixIndex + suffix.length());
+        }
+    }
+    textEdit->setText(text);
 }
