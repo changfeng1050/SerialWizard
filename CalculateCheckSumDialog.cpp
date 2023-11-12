@@ -83,9 +83,9 @@ void CalculateCheckSumDialog::createConnect() {
 QString CalculateCheckSumDialog::getSumResult(const QByteArray &data) {
     int sum = 0x00;
     for (auto s: data) {
-        sum += s;
+        sum += (s & 0xFF);
     }
-    return QString::number(sum & 0x00FFFF, 16).left(4).toUpper();
+    return QString::number(sum & 0xFFFFFFFF, 16).left(4).toUpper();
 }
 
 QString CalculateCheckSumDialog::getXorResult(const QByteArray &data) {
